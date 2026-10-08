@@ -1,0 +1,41 @@
+# Dependabot runs on GitHub's own infrastructure, not on GitHub Actions, so this
+# keeps working even with Actions disabled for this repository.
+#
+# Monthly rather than weekly, and grouped rather than one pull request per
+# package, because a template that opens fifteen dependency PRs a week reads as
+# noisy rather than maintained.
+version: 2
+
+updates:
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'monthly'
+      day: 'monday'
+    open-pull-requests-limit: 5
+    labels:
+      - 'dependencies'
+    commit-message:
+      prefix: 'deps'
+      prefix-development: 'deps-dev'
+    groups:
+      # Both groups are restricted to minor and patch on purpose.
+      #
+      # The first version of this file grouped every development dependency
+      # regardless of update type, and the result was one pull request carrying
+      # four majors at once: eslint 10, @eslint/js 10, globals 17, jsdom 30.
+      # ESLint 10 is outside the peer range of eslint-plugin-jsx-a11y, so
+      # `npm install` failed outright and the whole batch was unmergeable.
+      #
+      # Majors now arrive as their own pull request, one library at a time,
+      # which is the only way to read them properly.
+      dev-minor-and-patch:
+        dependency-type: 'development'
+        update-types:
+          - 'minor'
+          - 'patch'
+      runtime-minor-and-patch:
+        dependency-type: 'production'
+        update-types:
+          - 'minor'
+          - 'patch'
