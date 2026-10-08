@@ -4,7 +4,7 @@
  * repoint the links without hunting through components.
  */
 
-export const APP_NAME = 'ViteDash';
+export const APP_NAME = 'Altudo PMO';
 
 /**
  * `__APP_VERSION__` is replaced at build time by Vite with the version field

@@ -27,24 +27,16 @@ const LockScreen = lazy(() => import('@/pages/auth/LockScreen'));
 const Maintenance = lazy(() => import('@/pages/maintenance/Maintenance'));
 const NotFound = lazy(() => import('@/pages/not-found/NotFound'));
 
-// Dashboard pages
-const Home = lazy(() => import('@/pages/home/Home'));
-const Analytics = lazy(() => import('@/pages/analytics/Analytics'));
-const Charts = lazy(() => import('@/pages/charts/Charts'));
-const Calendar = lazy(() => import('@/pages/calendar/Calendar'));
-const Users = lazy(() => import('@/pages/users/Users'));
-const Roles = lazy(() => import('@/pages/roles/Roles'));
-const Tables = lazy(() => import('@/pages/tables/Tables'));
-const Products = lazy(() => import('@/pages/products/Products'));
-const Kanban = lazy(() => import('@/pages/kanban/Kanban'));
-const Invoices = lazy(() => import('@/pages/invoices/Invoices'));
-const Chat = lazy(() => import('@/pages/chat/Chat'));
+// PMO Dashboard pages
+const PMO = lazy(() => import('@/pages/pmo/PMO'));
+const Portfolios = lazy(() => import('@/pages/portfolios/Portfolios'));
+const Projects = lazy(() => import('@/pages/projects/Projects'));
+const Marketing = lazy(() => import('@/pages/marketing/Marketing'));
+const Departments = lazy(() => import('@/pages/departments/Departments'));
+
+// System pages (kept from ViteDash)
 const Notifications = lazy(() => import('@/pages/notifications/Notifications'));
 const ActivityLog = lazy(() => import('@/pages/activity/ActivityLog'));
-const Forms = lazy(() => import('@/pages/forms/Forms'));
-const Pricing = lazy(() => import('@/pages/pricing/Pricing'));
-const FAQ = lazy(() => import('@/pages/faq/FAQ'));
-const Blank = lazy(() => import('@/pages/blank/Blank'));
 const Profile = lazy(() => import('@/pages/profile/Profile'));
 const Settings = lazy(() => import('@/pages/settings/Settings'));
 
@@ -52,7 +44,7 @@ const App = () => (
   <BrowserRouter>
     <Suspense fallback={<PageLoader variant="spinner" minHeight="100dvh" />}>
       <Routes>
-        <Route path="/" element={<Navigate to="/dashboard/home" replace />} />
+        <Route path="/" element={<Navigate to="/dashboard/pmo" replace />} />
 
         <Route path="/signin" element={<SignIn />} />
         <Route path="/signup" element={<SignUp />} />
@@ -61,30 +53,18 @@ const App = () => (
         <Route path="/maintenance" element={<Maintenance />} />
 
         <Route path="/dashboard" element={<DashboardLayout />}>
-          <Route index element={<Navigate to="home" replace />} />
-          <Route path="home" element={<Home />} />
-          <Route path="analytics" element={<Analytics />} />
-          <Route path="charts" element={<Charts />} />
-          <Route path="calendar" element={<Calendar />} />
-          <Route path="users" element={<Users />} />
+          <Route index element={<Navigate to="pmo" replace />} />
 
-          {/* Admin only. The sidebar hides this entry for other roles, and this
-              guard is what stops someone who types the URL. */}
-          <Route element={<RequireRole roles={[ROLES.ADMIN]} />}>
-            <Route path="roles" element={<Roles />} />
-          </Route>
+          {/* PMO Command Center */}
+          <Route path="pmo" element={<PMO />} />
+          <Route path="portfolios" element={<Portfolios />} />
+          <Route path="projects" element={<Projects />} />
+          <Route path="marketing" element={<Marketing />} />
+          <Route path="departments" element={<Departments />} />
 
-          <Route path="tables" element={<Tables />} />
-          <Route path="products" element={<Products />} />
-          <Route path="kanban" element={<Kanban />} />
-          <Route path="invoices" element={<Invoices />} />
-          <Route path="chat" element={<Chat />} />
+          {/* System pages */}
           <Route path="notifications" element={<Notifications />} />
           <Route path="activity" element={<ActivityLog />} />
-          <Route path="forms" element={<Forms />} />
-          <Route path="pricing" element={<Pricing />} />
-          <Route path="faq" element={<FAQ />} />
-          <Route path="blank" element={<Blank />} />
           <Route path="profile" element={<Profile />} />
           <Route path="settings" element={<Settings />} />
 

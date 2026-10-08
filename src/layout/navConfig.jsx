@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom';
 import {
-  AppstoreOutlined,
-  DashboardOutlined,
   ExportOutlined,
   IdcardOutlined,
-  LayoutOutlined,
   MessageOutlined,
+  ProjectOutlined,
+  RocketOutlined,
   SafetyOutlined,
+  TeamOutlined,
+  TrophyOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
 import { ROLES } from '@/context/auth-context';
@@ -31,62 +32,52 @@ import { ROLES } from '@/context/auth-context';
  * ------------------------------------------------------------------------- */
 const NAV_TREE = [
   {
-    key: 'sec-workspace',
-    labelKey: 'nav.sections.workspace',
+    key: 'sec-pmo',
+    labelKey: 'nav.sections.pmoCenter',
     groups: [
       {
-        key: 'overview',
-        labelKey: 'nav.groups.overview',
-        Icon: DashboardOutlined,
+        key: 'pmo-group',
+        labelKey: 'nav.groups.pmoGroup',
+        Icon: TrophyOutlined,
         accent: '#7CB8FF',
         items: [
-          { to: '/dashboard/home', labelKey: 'nav.items.dashboard' },
-          { to: '/dashboard/analytics', labelKey: 'nav.items.analytics' },
-          { to: '/dashboard/charts', labelKey: 'nav.items.charts' },
-          { to: '/dashboard/calendar', labelKey: 'nav.items.calendar' },
+          { to: '/dashboard/pmo', labelKey: 'nav.items.pmo' },
+          { to: '/dashboard/portfolios', labelKey: 'nav.items.portfolios' },
+          { to: '/dashboard/projects', labelKey: 'nav.items.projects' },
         ],
       },
       {
-        key: 'management',
-        labelKey: 'nav.groups.management',
-        Icon: AppstoreOutlined,
-        accent: '#63CE92',
+        key: 'marketing-group',
+        labelKey: 'nav.groups.marketingGroup',
+        Icon: RocketOutlined,
+        accent: '#F59E0B',
         items: [
-          { to: '/dashboard/users', labelKey: 'nav.items.users' },
-          { to: '/dashboard/roles', labelKey: 'nav.items.roles', roles: [ROLES.ADMIN] },
-          { to: '/dashboard/tables', labelKey: 'nav.items.projects' },
-          { to: '/dashboard/products', labelKey: 'nav.items.products' },
-          { to: '/dashboard/kanban', labelKey: 'nav.items.kanban' },
-          { to: '/dashboard/invoices', labelKey: 'nav.items.invoices' },
+          { to: '/dashboard/marketing', labelKey: 'nav.items.marketing' },
         ],
       },
+      {
+        key: 'departments-group',
+        labelKey: 'nav.groups.departmentsGroup',
+        Icon: TeamOutlined,
+        accent: '#06B6D4',
+        items: [
+          { to: '/dashboard/departments', labelKey: 'nav.items.departments' },
+        ],
+      },
+    ],
+  },
+  {
+    key: 'sec-comms',
+    labelKey: 'nav.sections.workspace',
+    groups: [
       {
         key: 'communication',
         labelKey: 'nav.groups.communication',
         Icon: MessageOutlined,
         accent: '#B79BFF',
         items: [
-          { to: '/dashboard/chat', labelKey: 'nav.items.chat' },
           { to: '/dashboard/notifications', labelKey: 'nav.items.notifications' },
           { to: '/dashboard/activity', labelKey: 'nav.items.activity' },
-        ],
-      },
-    ],
-  },
-  {
-    key: 'sec-library',
-    labelKey: 'nav.sections.library',
-    groups: [
-      {
-        key: 'templates',
-        labelKey: 'nav.groups.templates',
-        Icon: LayoutOutlined,
-        accent: '#4BC8C4',
-        items: [
-          { to: '/dashboard/forms', labelKey: 'nav.items.forms' },
-          { to: '/dashboard/pricing', labelKey: 'nav.items.pricing' },
-          { to: '/dashboard/faq', labelKey: 'nav.items.faq' },
-          { to: '/dashboard/blank', labelKey: 'nav.items.blank' },
         ],
       },
       {

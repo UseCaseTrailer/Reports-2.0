@@ -12,13 +12,13 @@ import { APP_NAME } from '@/config/appInfo';
  * geometrically immobile during collapse: its centre sits on the 40px axis
  * either way (24px inset plus half of 32). Only the wordmark fades. */
 const LayoutLogo = () => (
-  <Link to="/dashboard/home" className="app-sider__brand" aria-label={`${APP_NAME}, home`}>
+  <Link to="/dashboard/pmo" className="app-sider__brand" aria-label={`${APP_NAME}, home`}>
     <span className="app-sider__mark">
       <img src={logoIcon} alt="" width={28} height={28} />
     </span>
     <span className="app-sider__wordmark">
-      <b>Vite</b>
-      <i>Dash</i>
+      <b>Altudo</b>
+      <i>PMO</i>
     </span>
   </Link>
 );
