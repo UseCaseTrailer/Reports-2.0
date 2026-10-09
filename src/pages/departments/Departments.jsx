@@ -11,9 +11,24 @@ import {
   Typography,
   Progress,
   Empty,
+  Drawer,
 } from 'antd';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import {
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
+import { BarChartOutlined } from '@ant-design/icons';
 import { DEPT_PORTFOLIOS } from '../../data/pmoData';
+import AIInsightPanel from '../../components/AIInsightPanel';
+import { getDeptProjectInsights } from '../../data/insightsEngine';
 
 const { Title, Text } = Typography;
 
@@ -38,6 +53,18 @@ const STATUS_LABEL = {
   complete: 'Complete',
 };
 
+// Category colors for pie chart
+const CAT_COLORS = [
+  '#6366f1',
+  '#06b6d4',
+  '#10b981',
+  '#f59e0b',
+  '#ef4444',
+  '#8b5cf6',
+  '#ec4899',
+  '#14b8a6',
+];
+
 /* ── KPI row ── */
 const KpiRow = ({ kpis }) => (
   <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
@@ -59,14 +86,15 @@ const KpiRow = ({ kpis }) => (
 );
 
 /* ── Project cards ── */
-const ProjectCard = ({ proj }) => {
+const ProjectCard = ({ proj, onInsightClick }) => {
   const totalTasks = proj.tasks.total || 1;
   const pct = Math.round((proj.tasks.done / totalTasks) * 100);
   const col = STATUS_COLOR[proj.status] || '#888';
   return (
     <Card
       size="small"
-      style={{ marginBottom: 12, borderLeft: `4px solid ${col}` }}
+      hoverable
+      style={{ marginBottom: 12, borderLeft: `4px solid ${col}`, cursor: 'pointer' }}
       title={
         <Space>
           <Text strong style={{ fontSize: 13 }}>
@@ -75,6 +103,15 @@ const ProjectCard = ({ proj }) => {
           <Tag color={STATUS_TAG[proj.status]}>{STATUS_LABEL[proj.status]}</Tag>
           <Tag>{proj.cat}</Tag>
         </Space>
+      }
+      extra={
+        <Text
+          type="secondary"
+          style={{ fontSize: 11, cursor: 'pointer', color: '#6366f1' }}
+          onClick={() => onInsightClick(proj)}
+        >
+          AI insights →
+        </Text>
       }
     >
       <Row gutter={[16, 8]}>
@@ -109,25 +146,234 @@ const ProjectCard = ({ proj }) => {
   );
 };
 
-/* ── Budget view ── */
+/* ── Budget tooltip — defined at module level to avoid ESLint react/no-unstable-nested-components ── */
+const CustomBarTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <Card size="small" style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+      <Text strong style={{ fontSize: 12 }}>
+        {label}
+      </Text>
+      {payload.map((p) => (
+        <div key={p.dataKey}>
+          <Text style={{ fontSize: 12, color: p.fill }}>
+            {p.dataKey}: ${p.value}K
+          </Text>
+        </div>
+      ))}
+    </Card>
+  );
+};
+
+/* ── Enhanced Budget view ── */
 const BudgetView = ({ dept }) => {
   if (!dept.projects.length) return <Empty description="No budget data yet" />;
+
   const chartData = dept.projects.map((p) => ({
-    name: p.name.length > 22 ? p.name.slice(0, 22) + '…' : p.name,
+    name: p.name.length > 20 ? p.name.slice(0, 20) + '…' : p.name,
     Budget: Math.round(p.budget / 1000),
     Spent: Math.round(p.spent / 1000),
+    Remaining: Math.round((p.budget - p.spent) / 1000),
+    utilPct: p.pctSpent,
   }));
+
+  // Category budget totals for pie
+  const catMap = {};
+  dept.projects.forEach((p) => {
+    const cat = p.cat || 'Other';
+    if (!catMap[cat]) catMap[cat] = 0;
+    catMap[cat] += p.budget;
+  });
+  const pieCatData = Object.entries(catMap).map(([name, value]) => ({
+    name,
+    value: Math.round(value / 1000),
+  }));
+
+  // Spend utilisation donut data
+  const totalBudget = dept.projects.reduce((s, p) => s + p.budget, 0);
+  const totalSpent = dept.projects.reduce((s, p) => s + p.spent, 0);
+  const utilPct = Math.round((totalSpent / totalBudget) * 100);
+  const donutData = [
+    { name: 'Spent', value: Math.round(totalSpent / 1000) },
+    { name: 'Remaining', value: Math.round((totalBudget - totalSpent) / 1000) },
+  ];
+
   return (
     <div>
-      <ResponsiveContainer width="100%" height={260}>
-        <BarChart data={chartData} layout="vertical">
-          <XAxis type="number" tick={{ fontSize: 10 }} unit="K" />
-          <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={160} />
-          <Tooltip formatter={(v) => `$${v}K`} />
-          <Bar dataKey="Budget" fill="#c4b5fd" />
-          <Bar dataKey="Spent" fill="#6366f1" />
-        </BarChart>
-      </ResponsiveContainer>
+      {/* Summary stat row */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+        <Col xs={24} sm={8}>
+          <Card size="small" style={{ borderTop: '3px solid #6366f1' }}>
+            <Statistic
+              title="Total Budget"
+              value={`$${Math.round(totalBudget / 1000)}K`}
+              valueStyle={{ color: '#6366f1' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Card
+            size="small"
+            style={{ borderTop: `3px solid ${utilPct > 90 ? '#ff4d4f' : '#52c41a'}` }}
+          >
+            <Statistic
+              title="Total Spent"
+              value={`$${Math.round(totalSpent / 1000)}K`}
+              valueStyle={{ color: utilPct > 90 ? '#ff4d4f' : '#52c41a' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={8}>
+          <Card size="small" style={{ borderTop: '3px solid #faad14' }}>
+            <Statistic
+              title="Budget Utilisation"
+              value={`${utilPct}%`}
+              valueStyle={{
+                color: utilPct > 90 ? '#ff4d4f' : utilPct > 70 ? '#faad14' : '#52c41a',
+              }}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Charts row */}
+      <Row gutter={[16, 16]}>
+        {/* Grouped bar chart */}
+        <Col xs={24} lg={14}>
+          <Card
+            size="small"
+            title={
+              <Text strong style={{ fontSize: 13 }}>
+                Budget vs Spent by Project
+              </Text>
+            }
+          >
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 8 }}>
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 10 }}
+                  interval={0}
+                  angle={-15}
+                  textAnchor="end"
+                  height={50}
+                />
+                <YAxis tick={{ fontSize: 10 }} unit="K" />
+                <Tooltip content={<CustomBarTooltip />} />
+                <Legend iconType="square" wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="Budget" fill="#c4b5fd" name="Budget ($K)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Spent" fill="#6366f1" name="Spent ($K)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </Card>
+        </Col>
+
+        {/* Right column: Pie + Donut */}
+        <Col xs={24} lg={10}>
+          <Row gutter={[16, 16]}>
+            {/* Category allocation pie */}
+            <Col span={24}>
+              <Card
+                size="small"
+                title={
+                  <Text strong style={{ fontSize: 13 }}>
+                    Budget by Category
+                  </Text>
+                }
+              >
+                <ResponsiveContainer width="100%" height={130}>
+                  <PieChart>
+                    <Pie
+                      data={pieCatData}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={50}
+                      dataKey="value"
+                      label={({ name, value }) => `${name}: $${value}K`}
+                      labelLine={false}
+                    >
+                      {pieCatData.map((_, idx) => (
+                        <Cell key={idx} fill={CAT_COLORS[idx % CAT_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(v) => `$${v}K`} />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: 10 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Card>
+            </Col>
+
+            {/* Utilisation donut */}
+            <Col span={24}>
+              <Card
+                size="small"
+                title={
+                  <Text strong style={{ fontSize: 13 }}>
+                    Spend Utilisation
+                  </Text>
+                }
+              >
+                <ResponsiveContainer width="100%" height={120}>
+                  <PieChart>
+                    <Pie
+                      data={donutData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={30}
+                      outerRadius={50}
+                      dataKey="value"
+                      startAngle={90}
+                      endAngle={-270}
+                    >
+                      <Cell fill={utilPct > 90 ? '#ff4d4f' : '#6366f1'} />
+                      <Cell fill="#e2e8f0" />
+                    </Pie>
+                    <Tooltip formatter={(v) => `$${v}K`} />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: 10 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Card>
+            </Col>
+          </Row>
+        </Col>
+      </Row>
+
+      {/* Per-project utilisation bars */}
+      <Card
+        size="small"
+        title={
+          <Text strong style={{ fontSize: 13 }}>
+            Budget Utilisation per Project
+          </Text>
+        }
+        style={{ marginTop: 16 }}
+      >
+        {dept.projects.map((proj) => (
+          <div key={proj.gid} style={{ marginBottom: 10 }}>
+            <Row justify="space-between">
+              <Text style={{ fontSize: 12 }}>{proj.name}</Text>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color:
+                    proj.pctSpent > 90 ? '#ff4d4f' : proj.pctSpent > 70 ? '#faad14' : '#52c41a',
+                }}
+              >
+                {proj.pctSpent}% (${Math.round(proj.spent / 1000)}K / $
+                {Math.round(proj.budget / 1000)}K)
+              </Text>
+            </Row>
+            <Progress
+              percent={proj.pctSpent}
+              size="small"
+              showInfo={false}
+              strokeColor={
+                proj.pctSpent > 90 ? '#ff4d4f' : proj.pctSpent > 70 ? '#faad14' : '#52c41a'
+              }
+            />
+          </div>
+        ))}
+      </Card>
     </div>
   );
 };
@@ -136,13 +382,20 @@ const BudgetView = ({ dept }) => {
 const DeptContent = ({ deptKey }) => {
   const dept = DEPT_PORTFOLIOS[deptKey];
   const [section, setSection] = useState('overview');
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedInsight, setSelectedInsight] = useState(null);
+
+  const openInsight = (proj) => {
+    setSelectedInsight(getDeptProjectInsights(proj));
+    setDrawerOpen(true);
+  };
 
   if (!dept) return <Empty />;
 
   const tabs = [
     { key: 'overview', label: 'Overview' },
     { key: 'projects', label: 'Projects' },
-    { key: 'budget', label: 'Budget' },
+    { key: 'budget', label: 'Budget & Analytics' },
   ];
 
   return (
@@ -159,7 +412,7 @@ const DeptContent = ({ deptKey }) => {
             <Row gutter={[16, 0]}>
               {dept.projects.map((p) => (
                 <Col span={24} key={p.gid}>
-                  <ProjectCard proj={p} />
+                  <ProjectCard proj={p} onInsightClick={openInsight} />
                 </Col>
               ))}
             </Row>
@@ -177,6 +430,10 @@ const DeptContent = ({ deptKey }) => {
               pagination={false}
               scroll={{ x: 600 }}
               dataSource={dept.projects.map((p) => ({ ...p, key: p.gid }))}
+              onRow={(record) => ({
+                onClick: () => openInsight(record),
+                style: { cursor: 'pointer' },
+              })}
               columns={[
                 {
                   title: 'Project',
@@ -225,8 +482,17 @@ const DeptContent = ({ deptKey }) => {
                       <Space direction="vertical" size={0}>
                         <Text style={{ fontSize: 11 }}>${(r.budget / 1000).toFixed(0)}K total</Text>
                         <Text type="secondary" style={{ fontSize: 11 }}>
-                          ${(r.spent / 1000).toFixed(0)}K spent
+                          ${(r.spent / 1000).toFixed(0)}K spent ({r.pctSpent}%)
                         </Text>
+                        <Progress
+                          percent={r.pctSpent}
+                          size="small"
+                          showInfo={false}
+                          strokeColor={
+                            r.pctSpent > 90 ? '#ff4d4f' : r.pctSpent > 70 ? '#faad14' : '#52c41a'
+                          }
+                          style={{ width: 80 }}
+                        />
                       </Space>
                     ) : (
                       '—'
@@ -238,6 +504,21 @@ const DeptContent = ({ deptKey }) => {
                   key: 'roi',
                   render: (v) => (v ? <Tag color="success">{v}%</Tag> : '—'),
                 },
+                {
+                  title: 'Insights',
+                  key: 'insights',
+                  render: (_, r) => (
+                    <Text
+                      style={{ fontSize: 11, color: '#6366f1', cursor: 'pointer' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openInsight(r);
+                      }}
+                    >
+                      <BarChartOutlined /> AI →
+                    </Text>
+                  ),
+                },
               ]}
             />
           )}
@@ -245,6 +526,29 @@ const DeptContent = ({ deptKey }) => {
       )}
 
       {section === 'budget' && <BudgetView dept={dept} />}
+
+      {/* AI Insight Drawer */}
+      <Drawer
+        title={
+          <Space>
+            <BarChartOutlined style={{ color: '#6366f1' }} />
+            <span>AI Project Insights</span>
+          </Space>
+        }
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        width={460}
+        styles={{ body: { padding: 16 } }}
+      >
+        {selectedInsight && (
+          <>
+            <Text strong style={{ fontSize: 14, display: 'block', marginBottom: 12 }}>
+              {selectedInsight.name}
+            </Text>
+            <AIInsightPanel insight={selectedInsight} />
+          </>
+        )}
+      </Drawer>
     </div>
   );
 };

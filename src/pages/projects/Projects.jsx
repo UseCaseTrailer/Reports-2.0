@@ -1,12 +1,18 @@
-import { Table, Tag, Progress, Space, Typography, Card, Row, Col } from 'antd';
+import { useState } from 'react';
+import { Table, Tag, Progress, Space, Typography, Card, Row, Col, Tabs, Drawer } from 'antd';
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   WarningOutlined,
   UserOutlined,
+  BarChartOutlined,
+  CommentOutlined,
 } from '@ant-design/icons';
 import SectionLabel from '../../components/SectionLabel';
+import AIInsightPanel from '../../components/AIInsightPanel';
+import TaskComments from '../../components/TaskComments';
 import { PORTFOLIOS, scoreHealth, healthGrade } from '../../data/pmoData';
+import { getProjectInsights } from '../../data/insightsEngine';
 
 const { Title, Text } = Typography;
 
@@ -35,6 +41,7 @@ const rows = activeGrants.map((proj) => {
     tag: grade.tag,
     color: grade.color,
     tasks: proj.tasks,
+    proj,
   };
 });
 
@@ -122,7 +129,10 @@ const columns = [
   },
 ];
 
-const expandedRowRender = (record) => {
+// ── Expanded row: tabbed Tasks / Insights / Comments ──
+const ExpandedRow = ({ record }) => {
+  const [activeTab, setActiveTab] = useState('tasks');
+
   const taskCols = [
     {
       title: 'Task',
@@ -187,41 +197,195 @@ const expandedRowRender = (record) => {
           </Tag>
         ),
     },
+    {
+      title: 'Comments',
+      key: 'comments',
+      render: (_, t) => (
+        <Text
+          style={{ fontSize: 11, color: '#6366f1', cursor: 'pointer' }}
+          onClick={() => {
+            setActiveTab(`comments-${t.gid}`);
+          }}
+        >
+          <CommentOutlined /> View/Add
+        </Text>
+      ),
+    },
   ];
+
+  const insight = getProjectInsights(record.proj);
+
+  // Build tabs: Tasks + Insights + one Comments tab per task
+  const tabItems = [
+    {
+      key: 'tasks',
+      label: (
+        <Space size={4}>
+          <ClockCircleOutlined />
+          Tasks ({record.total})
+        </Space>
+      ),
+      children: (
+        <Table
+          columns={taskCols}
+          dataSource={record.tasks.map((t) => ({ ...t, key: t.gid }))}
+          pagination={false}
+          size="small"
+        />
+      ),
+    },
+    {
+      key: 'insights',
+      label: (
+        <Space size={4}>
+          <BarChartOutlined style={{ color: '#6366f1' }} />
+          AI Insights
+        </Space>
+      ),
+      children: (
+        <div style={{ padding: '8px 0' }}>
+          <AIInsightPanel insight={insight} />
+        </div>
+      ),
+    },
+    // One comments tab per task
+    ...record.tasks.map((t) => ({
+      key: `comments-${t.gid}`,
+      label: (
+        <Space size={4}>
+          <CommentOutlined />
+          <Text style={{ fontSize: 12 }} ellipsis>
+            {t.n.length > 20 ? t.n.slice(0, 20) + '…' : t.n}
+          </Text>
+        </Space>
+      ),
+      children: (
+        <div style={{ padding: '8px 0' }}>
+          <TaskComments taskGid={t.gid} taskName={t.n} projectGid={record.gid} />
+        </div>
+      ),
+    })),
+  ];
+
   return (
-    <Table
-      columns={taskCols}
-      dataSource={record.tasks.map((t) => ({ ...t, key: t.gid }))}
-      pagination={false}
-      size="small"
-    />
+    <div style={{ padding: '8px 16px', background: '#fafafa', borderRadius: 4 }}>
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={tabItems}
+        size="small"
+        tabBarStyle={{ marginBottom: 12 }}
+      />
+    </div>
   );
 };
 
-const Projects = () => (
-  <div>
-    <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-      <Col>
-        <Title level={4} style={{ marginBottom: 4 }}>
-          Active Projects
-        </Title>
-        <Text type="secondary">03.Active Projects portfolio · 6 grant research studies</Text>
-      </Col>
-    </Row>
+const Projects = () => {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
 
-    <SectionLabel style={{ marginTop: 0 }}>Grant Projects (click to expand tasks)</SectionLabel>
+  const openInsightDrawer = (record) => {
+    setSelectedProject(record);
+    setDrawerOpen(true);
+  };
 
-    <Card>
-      <Table
-        columns={columns}
-        dataSource={rows}
-        expandable={{ expandedRowRender }}
-        pagination={false}
-        size="small"
-        scroll={{ x: 700 }}
-      />
-    </Card>
-  </div>
-);
+  return (
+    <div>
+      <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
+        <Col>
+          <Title level={4} style={{ marginBottom: 4 }}>
+            Active Projects
+          </Title>
+          <Text type="secondary">03.Active Projects portfolio · 6 grant research studies</Text>
+        </Col>
+      </Row>
+
+      <SectionLabel style={{ marginTop: 0 }}>
+        Grant Projects — click a row to expand tasks, insights &amp; comments
+      </SectionLabel>
+
+      <Card>
+        <Table
+          columns={[
+            ...columns,
+            {
+              title: 'Quick Insights',
+              key: 'quickInsights',
+              render: (_, r) => (
+                <Text
+                  style={{
+                    fontSize: 11,
+                    color: '#6366f1',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openInsightDrawer(r);
+                  }}
+                >
+                  <BarChartOutlined /> AI →
+                </Text>
+              ),
+            },
+          ]}
+          dataSource={rows}
+          expandable={{
+            expandedRowRender: (record) => <ExpandedRow record={record} />,
+          }}
+          pagination={false}
+          size="small"
+          scroll={{ x: 700 }}
+        />
+      </Card>
+
+      {/* Quick-access AI Insight Drawer */}
+      <Drawer
+        title={
+          <Space>
+            <BarChartOutlined style={{ color: '#6366f1' }} />
+            <span>AI Project Insights</span>
+            {selectedProject && (
+              <Tag
+                color={
+                  selectedProject.score >= 80
+                    ? 'success'
+                    : selectedProject.score >= 60
+                      ? 'warning'
+                      : 'error'
+                }
+              >
+                {selectedProject.label}
+              </Tag>
+            )}
+          </Space>
+        }
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        width={480}
+        styles={{ body: { padding: 16 } }}
+      >
+        {selectedProject && (
+          <>
+            <Text strong style={{ fontSize: 14, display: 'block', marginBottom: 12 }}>
+              {selectedProject.name}
+            </Text>
+            <AIInsightPanel insight={getProjectInsights(selectedProject.proj)} />
+
+            <div style={{ marginTop: 16 }}>
+              <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 8 }}>
+                <CommentOutlined style={{ color: '#6366f1', marginRight: 6 }} />
+                Task Comments
+              </Text>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Expand a project row → Comments tab to view and add task comments
+              </Text>
+            </div>
+          </>
+        )}
+      </Drawer>
+    </div>
+  );
+};
 
 export default Projects;
