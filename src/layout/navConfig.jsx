@@ -4,10 +4,8 @@ import {
   IdcardOutlined,
   MessageOutlined,
   RocketOutlined,
-  SafetyOutlined,
   TeamOutlined,
   TrophyOutlined,
-  WarningOutlined,
 } from '@ant-design/icons';
 
 /* ---------------------------------------------------------------------------
@@ -80,31 +78,6 @@ const NAV_TREE = [
         items: [
           { to: '/dashboard/notifications', labelKey: 'nav.items.notifications' },
           { to: '/dashboard/activity', labelKey: 'nav.items.activity' },
-        ],
-      },
-      {
-        key: 'auth-pages',
-        labelKey: 'nav.groups.authPages',
-        Icon: SafetyOutlined,
-        accent: '#E8A94F',
-        items: [
-          { to: '/signin', labelKey: 'nav.items.signIn', external: true },
-          { to: '/signup', labelKey: 'nav.items.signUp', external: true },
-          { to: '/forgot-password', labelKey: 'nav.items.forgotPassword', external: true },
-          { to: '/lock', labelKey: 'nav.items.lock', external: true },
-        ],
-      },
-      {
-        key: 'error-pages',
-        labelKey: 'nav.groups.errorPages',
-        Icon: WarningOutlined,
-        accent: '#FF9A9C',
-        items: [
-          { to: '/dashboard/errors/400', labelKey: 'nav.items.error400' },
-          { to: '/dashboard/errors/403', labelKey: 'nav.items.error403' },
-          { to: '/dashboard/errors/404', labelKey: 'nav.items.error404' },
-          { to: '/dashboard/errors/500', labelKey: 'nav.items.error500' },
-          { to: '/maintenance', labelKey: 'nav.items.maintenance', external: true },
         ],
       },
     ],

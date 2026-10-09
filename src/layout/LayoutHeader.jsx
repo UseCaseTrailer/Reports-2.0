@@ -14,10 +14,11 @@ import {
   theme,
 } from 'antd';
 import {
+  AppstoreOutlined,
   BellOutlined,
   BgColorsOutlined,
   DownOutlined,
-  FileAddOutlined,
+  ExportOutlined,
   FullscreenExitOutlined,
   FullscreenOutlined,
   GlobalOutlined,
@@ -27,12 +28,11 @@ import {
   MenuUnfoldOutlined,
   MoonOutlined,
   PlusOutlined,
+  ProjectOutlined,
   SearchOutlined,
   SettingOutlined,
   SunOutlined,
-  TableOutlined,
   UserOutlined,
-  UsergroupAddOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import CommandPalette from '@/components/CommandPalette';
@@ -95,21 +95,21 @@ const LayoutHeader = ({ navExpanded, toggleSidebar, isMobile }) => {
   const quickActionItems = [
     {
       key: 'new-page',
-      icon: <FileAddOutlined />,
+      icon: <ExportOutlined />,
       label: t('header.newPage'),
-      onClick: () => navigate('/dashboard/blank'),
+      onClick: () => window.open('https://app.asana.com', '_blank', 'noopener,noreferrer'),
     },
     {
       key: 'new-user',
-      icon: <UsergroupAddOutlined />,
+      icon: <AppstoreOutlined />,
       label: t('header.inviteUser'),
-      onClick: () => navigate('/dashboard/users'),
+      onClick: () => navigate('/dashboard/portfolios'),
     },
     {
       key: 'new-table',
-      icon: <TableOutlined />,
+      icon: <ProjectOutlined />,
       label: t('header.viewRecords'),
-      onClick: () => navigate('/dashboard/tables'),
+      onClick: () => navigate('/dashboard/projects'),
     },
   ];
 
@@ -234,7 +234,7 @@ const LayoutHeader = ({ navExpanded, toggleSidebar, isMobile }) => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => navigate('/dashboard/blank')}
+            onClick={() => navigate('/dashboard/portfolios')}
           >
             {!isMobile && t('header.quickActions')}
           </Button>

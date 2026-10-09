@@ -24,9 +24,9 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 export const REQUIRE_AUTH = import.meta.env.VITE_REQUIRE_AUTH === 'true';
 
 export const APP_LINKS = {
-  github: 'https://github.com/shehari007/vitedash-vite-antd-dashboard-template',
-  author: 'https://github.com/shehari007',
-  email: 'mailto:shehariyar@gmail.com',
-  docs: 'https://ant.design/docs/react/introduce',
-  demo: 'https://vitedash.msyb.dev',
+  github: 'https://www.altudo.co',
+  author: 'https://www.altudo.co',
+  email: 'mailto:support@altudo.co',
+  docs: 'https://www.altudo.co/resources',
+  demo: 'https://www.altudo.co',
 };

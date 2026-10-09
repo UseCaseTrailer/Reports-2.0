@@ -47,7 +47,9 @@ describe('App', () => {
     // not: only the group owning the current route is expanded, which is why
     // this checks for "Portfolio & Projects" rather than individual page links.
     expect(screen.getByText('Portfolio & Projects')).toBeInTheDocument();
-    expect(screen.getByText('Auth Pages')).toBeInTheDocument();
+    // Auth Pages and Error Pages were removed from the sidebar in the Altudo PMO rebrand.
+    // The second expanded group is now Industry Solutions under the same section.
+    expect(screen.getByText('Industry Solutions')).toBeInTheDocument();
   });
 
   it('shows the account card for the demo user', async () => {

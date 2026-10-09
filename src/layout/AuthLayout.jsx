@@ -1,5 +1,5 @@
 import { Row, Col, Typography, Space, Grid, theme } from 'antd';
-import { CheckCircleFilled, GithubOutlined, MailOutlined } from '@ant-design/icons';
+import { CheckCircleFilled, GlobalOutlined, MailOutlined } from '@ant-design/icons';
 import logoIcon from '@/assets/logo/logo-icon.png';
 import { APP_LINKS, APP_NAME } from '@/config/appInfo';
 
@@ -7,9 +7,9 @@ const { Title, Text, Link } = Typography;
 const { useBreakpoint } = Grid;
 
 const highlights = [
-  'Responsive layouts tuned for desktop, tablet, and mobile',
-  'System wide light and dark mode via Ant Design theming',
-  'Role aware navigation, charts, and a searchable command palette',
+  'Real-time Asana portfolio and project tracking in one place',
+  'AI-powered executive insights across all industry verticals',
+  'Role-aware navigation with live health monitoring and alerts',
 ];
 
 const AuthLayout = ({ eyebrow, title, subtitle, children }) => {
@@ -56,14 +56,14 @@ const AuthLayout = ({ eyebrow, title, subtitle, children }) => {
               />
             </div>
             <Text style={{ color: '#fff', fontWeight: 600, fontSize: 20 }}>
-              <span style={{ fontWeight: 700 }}>Vite</span>
-              <span style={{ fontWeight: 400, opacity: 0.85 }}>Dash</span>
+              <span style={{ fontWeight: 700 }}>Altudo</span>
+              <span style={{ fontWeight: 400, opacity: 0.85 }}> PMO</span>
             </Text>
           </Space>
 
           <div>
             <Title level={2} style={{ color: '#fff', marginBottom: 16 }}>
-              Manage your business from one clean dashboard.
+              Your Asana portfolio, projects, and insights — all in one place.
             </Title>
             <Space orientation="vertical" size={12}>
               {highlights.map((item) => (
@@ -76,7 +76,7 @@ const AuthLayout = ({ eyebrow, title, subtitle, children }) => {
           </div>
 
           <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>
-            © {new Date().getFullYear()} ViteDash
+            © {new Date().getFullYear()} {APP_NAME}
           </Text>
         </Col>
       )}
@@ -130,7 +130,7 @@ const AuthLayout = ({ eyebrow, title, subtitle, children }) => {
             rel="noopener noreferrer"
             style={{ fontSize: 12 }}
           >
-            <GithubOutlined /> GitHub
+            <GlobalOutlined /> Altudo.co
           </Link>
         </Space>
       </Col>

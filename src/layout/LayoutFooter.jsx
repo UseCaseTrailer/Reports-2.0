@@ -1,5 +1,5 @@
 import { Layout, Typography, Space, Button, Tag, Tooltip, theme } from 'antd';
-import { GithubOutlined, MailOutlined, ReadOutlined } from '@ant-design/icons';
+import { GlobalOutlined, MailOutlined, ReadOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import logoIcon from '@/assets/logo/logo-icon.png';
 import { APP_LINKS, APP_NAME, APP_VERSION } from '@/config/appInfo';
@@ -33,7 +33,7 @@ const LayoutFooter = () => {
       key: 'github',
       label: t('footer.github'),
       href: APP_LINKS.github,
-      icon: <GithubOutlined />,
+      icon: <GlobalOutlined />,
       color: '#722ed1',
       external: true,
     },

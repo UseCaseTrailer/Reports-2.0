@@ -33,7 +33,7 @@
     "groups": {
       "pmoGroup": "Portfolio & Projects",
       "marketingGroup": "Marketing",
-      "departmentsGroup": "Departments",
+      "departmentsGroup": "Industry Solutions",
       "overview": "Overview",
       "management": "Management",
       "communication": "System",
@@ -88,9 +88,9 @@
     "searchPlaceholder": "Search pages and actions",
     "commandHint": "Ctrl K",
     "quickActions": "Quick Actions",
-    "newPage": "New Page",
-    "inviteUser": "Invite User",
-    "viewRecords": "View Records",
+    "newPage": "Open in Asana",
+    "inviteUser": "View Portfolio",
+    "viewRecords": "Active Projects",
     "fullscreen": "Fullscreen",
     "exitFullscreen": "Exit fullscreen",
     "notifications": "Notifications",
@@ -105,10 +105,10 @@
     "logout": "Log out"
   },
   "footer": {
-    "builtBy": "© {{year}} {{app}}. Built by Muhammad Sheharyar Butt.",
-    "email": "Email",
-    "docs": "Ant Design Docs",
-    "github": "GitHub"
+    "builtBy": "© {{year}} {{app}}",
+    "email": "Support",
+    "docs": "Documentation",
+    "github": "Altudo.co"
   },
   "command": {
     "title": "Command palette",
@@ -149,7 +149,7 @@
     "signIn": "Sign In",
     "noAccount": "Do not have an account?",
     "signUpNow": "Sign up now",
-    "demoHint": "Demo accounts: admin@vitedash.dev or editor@vitedash.dev, any password.",
+    "demoHint": "Demo accounts: admin@altudo.co or editor@altudo.co, any password.",
     "lockTitle": "Screen locked",
     "lockSubtitle": "Enter your password to pick up where you left off.",
     "unlock": "Unlock",

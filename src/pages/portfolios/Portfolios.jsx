@@ -54,7 +54,11 @@ const VerticalCard = ({ vertical }) => {
         </Space>
       }
       extra={
-        redCount > 0 ? (
+        withStatus.length === 0 ? (
+          <Tag color="default" style={{ fontSize: 10 }}>
+            Not assessed
+          </Tag>
+        ) : redCount > 0 ? (
           <Tag color="error" style={{ fontSize: 10 }}>
             <WarningOutlined /> {redCount} off track
           </Tag>

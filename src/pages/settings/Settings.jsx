@@ -98,9 +98,7 @@ const AppearanceSettings = () => {
             />
           </div>
           <Text type="secondary" style={{ display: 'block', marginTop: 8 }}>
-            {
-              "Applied instantly across the app via Ant Design's ConfigProvider. You are currently in "
-            }
+            {'Applied instantly across the dashboard. You are currently in '}
             <strong>{isDark ? 'dark' : 'light'}</strong> mode.
           </Text>
         </div>

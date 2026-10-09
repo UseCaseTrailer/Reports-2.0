@@ -22,9 +22,12 @@ describe('getSelectedKey', () => {
   });
 
   it('matches the longest prefix, not the last path segment', () => {
-    // The old split('/').pop() implementation returned '404' here, which
-    // matched nothing, and '/dashboard/errors/404' has to win over '/dashboard'.
-    expect(getSelectedKey('/dashboard/errors/404')).toBe('/dashboard/errors/404');
+    // The old split('/').pop() implementation returned 'healthcare' here,
+    // which matched nothing; '/dashboard/departments/healthcare' must win
+    // over '/dashboard' by longest-prefix.
+    expect(getSelectedKey('/dashboard/departments/healthcare')).toBe(
+      '/dashboard/departments/healthcare'
+    );
   });
 
   it('matches a nested child route to its parent page', () => {
@@ -97,9 +100,10 @@ describe('getBreadcrumbTrail', () => {
 });
 
 describe('getSearchablePages', () => {
-  it('includes external pages so the palette can open them', () => {
+  it('contains no external pages after the Altudo PMO rebrand removed auth/error pages', () => {
     const pages = getSearchablePages(t);
-    expect(pages.find((page) => page.to === '/signin')?.external).toBe(true);
+    // Auth pages and error pages were removed from the nav — no external links remain.
+    expect(pages.every((page) => !page.external)).toBe(true);
   });
 
   it('respects the role filter', () => {
