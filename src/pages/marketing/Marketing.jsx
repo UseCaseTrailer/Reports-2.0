@@ -25,7 +25,6 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  Legend,
   ReferenceLine,
 } from 'recharts';
 import SectionLabel from '../../components/SectionLabel';
@@ -465,25 +464,61 @@ const PortfolioPulse = () => {
 };
 
 /* ── Attribution ── */
-const Attribution = () => {
-  const data = ATTRIBUTION.map((r) => ({ ...r }));
-  return (
-    <div>
-      <SectionLabel>Multi-touch Attribution</SectionLabel>
-      <ResponsiveContainer width="100%" height={220}>
-        <BarChart data={data} layout="vertical">
-          <XAxis type="number" tick={{ fontSize: 11 }} />
-          <YAxis dataKey="channel" type="category" tick={{ fontSize: 11 }} width={120} />
-          <Tooltip />
-          <Legend />
-          <Bar dataKey="firstTouch" name="First Touch %" fill="#6366f1" />
-          <Bar dataKey="lastTouch" name="Last Touch %" fill="#06b6d4" />
-          <Bar dataKey="linear" name="Linear %" fill="#f59e0b" />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  );
-};
+const Attribution = () => (
+  <div>
+    <SectionLabel>Multi-touch Attribution</SectionLabel>
+    <Row gutter={[12, 12]}>
+      {ATTRIBUTION.map((r) => (
+        <Col xs={24} sm={12} lg={8} key={r.channel}>
+          <Card size="small" styles={{ body: { padding: '10px 14px' } }}>
+            <Typography.Text strong style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
+              {r.channel}
+            </Typography.Text>
+            <Space direction="vertical" size={6} style={{ width: '100%' }}>
+              <div>
+                <Row justify="space-between">
+                  <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                    First Touch
+                  </Typography.Text>
+                  <Typography.Text style={{ fontSize: 11 }}>{r.firstTouch}%</Typography.Text>
+                </Row>
+                <Progress
+                  percent={r.firstTouch}
+                  showInfo={false}
+                  strokeColor="#6366f1"
+                  size="small"
+                />
+              </div>
+              <div>
+                <Row justify="space-between">
+                  <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                    Last Touch
+                  </Typography.Text>
+                  <Typography.Text style={{ fontSize: 11 }}>{r.lastTouch}%</Typography.Text>
+                </Row>
+                <Progress
+                  percent={r.lastTouch}
+                  showInfo={false}
+                  strokeColor="#06b6d4"
+                  size="small"
+                />
+              </div>
+              <div>
+                <Row justify="space-between">
+                  <Typography.Text type="secondary" style={{ fontSize: 11 }}>
+                    Linear
+                  </Typography.Text>
+                  <Typography.Text style={{ fontSize: 11 }}>{r.linear}%</Typography.Text>
+                </Row>
+                <Progress percent={r.linear} showInfo={false} strokeColor="#f59e0b" size="small" />
+              </div>
+            </Space>
+          </Card>
+        </Col>
+      ))}
+    </Row>
+  </div>
+);
 
 /* ── Channel Scorecard ── */
 const ChannelScorecard = () => {

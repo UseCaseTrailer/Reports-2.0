@@ -1,389 +1,433 @@
-import { useState } from 'react';
-import { Table, Tag, Progress, Space, Typography, Card, Row, Col, Tabs, Drawer } from 'antd';
+import { useEffect, useState } from 'react';
 import {
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  WarningOutlined,
-  UserOutlined,
-  BarChartOutlined,
-  CommentOutlined,
-} from '@ant-design/icons';
+  Alert,
+  Badge,
+  Card,
+  Col,
+  Row,
+  Select,
+  Skeleton,
+  Space,
+  Table,
+  Tag,
+  Typography,
+} from 'antd';
+import { FilterOutlined, ReloadOutlined } from '@ant-design/icons';
 import SectionLabel from '../../components/SectionLabel';
-import AIInsightPanel from '../../components/AIInsightPanel';
-import TaskComments from '../../components/TaskComments';
-import { PORTFOLIOS, scoreHealth, healthGrade } from '../../data/pmoData';
-import { getProjectInsights } from '../../data/insightsEngine';
 
 const { Title, Text } = Typography;
+const { Option } = Select;
 
-const activeGrants = PORTFOLIOS.find((p) => p.name === '03.Active Projects')?.projects || [];
+const VERTICAL_SHORT = {
+  'Healthcare & Life Sciences': 'Healthcare',
+  'Technology & SaaS': 'Technology',
+  'Manufacturing & Industrial': 'Manufacturing',
+  'Financial Services': 'Financial',
+  'Real Estate & Energy': 'Real Estate',
+  'Food, Hospitality & Retail': 'Food & Retail',
+  'Professional Services & Operations': 'Professional',
+};
 
-const rows = activeGrants.map((proj) => {
-  const hs = scoreHealth(proj.tasks);
-  const grade = healthGrade(hs.v);
-  const leads = [...new Set(proj.tasks.map((t) => t.who).filter(Boolean))];
-  return {
-    key: proj.gid,
-    gid: proj.gid,
-    name: proj.name,
-    type: proj.type,
-    phase: proj.phase,
-    start: proj.start,
-    end: proj.end,
-    leads,
-    total: hs.N,
-    done: hs.done,
-    ov: hs.ov,
-    ua: hs.ua,
-    cp: hs.cp,
-    score: hs.v,
-    label: grade.label,
-    tag: grade.tag,
-    color: grade.color,
-    tasks: proj.tasks,
-    proj,
-  };
-});
+const HEALTH_COLOR = {
+  Green: '#52c41a',
+  Yellow: '#faad14',
+  Red: '#ff4d4f',
+};
 
-const columns = [
-  {
-    title: 'Grant ID / Project',
-    dataIndex: 'name',
-    key: 'name',
-    render: (text) => (
-      <Space direction="vertical" size={0}>
-        <Text strong style={{ fontSize: 13 }}>
-          {text.split('–')[0].trim()}
-        </Text>
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          {text.includes('–') ? text.split('–').slice(1).join('–').trim() : ''}
-        </Text>
-      </Space>
-    ),
-  },
-  {
-    title: 'Phase',
-    dataIndex: 'phase',
-    key: 'phase',
-    responsive: ['md'],
-    render: (phase) => <Tag color="blue">{phase}</Tag>,
-  },
-  {
-    title: 'Lead',
-    dataIndex: 'leads',
-    key: 'leads',
-    responsive: ['lg'],
-    render: (leads) => (
-      <Space size={4}>
-        <UserOutlined />
-        <Text style={{ fontSize: 12 }}>{leads[0] || '—'}</Text>
-      </Space>
-    ),
-  },
-  {
-    title: 'Timeline',
-    key: 'timeline',
-    responsive: ['lg'],
-    render: (_, r) => (
-      <Space direction="vertical" size={0}>
-        <Text style={{ fontSize: 11 }}>
-          <ClockCircleOutlined /> {r.start || '—'}
-        </Text>
-        <Text style={{ fontSize: 11 }}>→ {r.end || '—'}</Text>
-      </Space>
-    ),
-  },
-  {
-    title: 'Tasks',
-    key: 'tasks',
-    responsive: ['md'],
-    render: (_, r) => (
-      <Space direction="vertical" size={2} style={{ width: 100 }}>
-        <Text style={{ fontSize: 11 }}>
-          {r.done}/{r.total} done
-        </Text>
-        <Progress percent={r.cp} size="small" showInfo={false} strokeColor={r.color} />
-        {r.ov > 0 && (
-          <Text type="danger" style={{ fontSize: 11 }}>
-            <WarningOutlined /> {r.ov} overdue
+const STATUS_TAG = {
+  'On Track': 'success',
+  'At Risk': 'warning',
+  'Off Track': 'error',
+  'In Progress': 'processing',
+};
+
+/* ── Expanded row: project detail panel ── */
+const ProjectDetail = ({ record }) => (
+  <div
+    style={{
+      padding: '10px 16px',
+      background: '#fafafa',
+      borderRadius: 4,
+      marginTop: 2,
+    }}
+  >
+    <Row gutter={[16, 8]}>
+      <Col xs={24} md={12}>
+        <Space direction="vertical" size={4}>
+          {record.industry && (
+            <Text style={{ fontSize: 12 }}>
+              <b>Industry:</b> {record.industry}
+            </Text>
+          )}
+          {record.sector && (
+            <Text style={{ fontSize: 12 }}>
+              <b>Sector:</b> {record.sector}
+            </Text>
+          )}
+          {record.region && (
+            <Text style={{ fontSize: 12 }}>
+              <b>Region:</b> {record.region}
+            </Text>
+          )}
+          {record.consultant && (
+            <Text style={{ fontSize: 12 }}>
+              <b>Consultant:</b> {record.consultant}
+            </Text>
+          )}
+          {record.useCase && (
+            <Text style={{ fontSize: 12 }}>
+              <b>Use Case:</b> {record.useCase}
+            </Text>
+          )}
+          {record.client && (
+            <Text style={{ fontSize: 12 }}>
+              <b>Client:</b> {record.client}
+            </Text>
+          )}
+          {record.healthReason && (
+            <Text style={{ fontSize: 12 }}>
+              <b>Health Reason:</b> {record.healthReason}
+            </Text>
+          )}
+        </Space>
+      </Col>
+      <Col xs={24} md={12}>
+        {record.statusExcerpt ? (
+          <div>
+            <Text style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>
+              Latest Status Update
+            </Text>
+            <div
+              style={{
+                padding: '8px 10px',
+                background: '#f0f4ff',
+                borderRadius: 4,
+                borderLeft: '3px solid #6366f1',
+              }}
+            >
+              <Text type="secondary" style={{ fontSize: 11, lineHeight: '1.5' }}>
+                {record.statusExcerpt}
+              </Text>
+            </div>
+            {record.statusUpdatedAt && (
+              <Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: 4 }}>
+                Updated: {new Date(record.statusUpdatedAt).toLocaleDateString()}
+              </Text>
+            )}
+          </div>
+        ) : (
+          <Text type="secondary" style={{ fontSize: 11 }}>
+            No status update available
           </Text>
         )}
+      </Col>
+    </Row>
+  </div>
+);
+
+/* ── Table columns ── */
+const buildColumns = () => [
+  {
+    title: 'Project / Use Case',
+    dataIndex: 'name',
+    key: 'name',
+    render: (text, r) => (
+      <Space size={6}>
+        <span
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            background: r.verticalColor,
+            display: 'inline-block',
+            flexShrink: 0,
+          }}
+        />
+        <Text style={{ fontSize: 12 }}>{text}</Text>
+        {r.type === 'portfolio' && (
+          <Tag style={{ fontSize: 9, lineHeight: '14px', padding: '0 4px' }}>Portfolio</Tag>
+        )}
       </Space>
+    ),
+  },
+  {
+    title: 'Vertical',
+    dataIndex: 'vertical',
+    key: 'vertical',
+    responsive: ['md'],
+    render: (v, r) => (
+      <Tag
+        style={{
+          fontSize: 10,
+          lineHeight: '18px',
+          borderColor: r.verticalColor,
+          color: r.verticalColor,
+        }}
+      >
+        {VERTICAL_SHORT[v] ?? v}
+      </Tag>
+    ),
+  },
+  {
+    title: 'Industry',
+    dataIndex: 'industry',
+    key: 'industry',
+    responsive: ['lg'],
+    render: (v) => (
+      <Text type="secondary" style={{ fontSize: 11 }}>
+        {v || '—'}
+      </Text>
     ),
   },
   {
     title: 'Health',
+    dataIndex: 'health',
     key: 'health',
-    render: (_, r) => (
-      <Space>
-        <Progress
-          type="circle"
-          percent={r.score}
-          size={40}
-          strokeColor={r.color}
-          format={(p) => <span style={{ fontSize: 10, fontWeight: 700 }}>{p}</span>}
-        />
-        <Tag color={r.tag}>{r.label}</Tag>
-      </Space>
+    render: (h) => {
+      if (!h)
+        return (
+          <Text type="secondary" style={{ fontSize: 11 }}>
+            —
+          </Text>
+        );
+      const color = HEALTH_COLOR[h] || '#d1d5db';
+      return <Badge color={color} text={<Text style={{ fontSize: 11 }}>{h}</Text>} />;
+    },
+  },
+  {
+    title: 'Project Status',
+    dataIndex: 'projectStatus',
+    key: 'projectStatus',
+    render: (s) => {
+      if (!s)
+        return (
+          <Text type="secondary" style={{ fontSize: 11 }}>
+            —
+          </Text>
+        );
+      const tagColor = STATUS_TAG[s] || 'default';
+      return (
+        <Tag color={tagColor} style={{ fontSize: 10 }}>
+          {s}
+        </Tag>
+      );
+    },
+  },
+  {
+    title: 'Client',
+    dataIndex: 'client',
+    key: 'client',
+    responsive: ['xl'],
+    render: (c) => (
+      <Text type="secondary" style={{ fontSize: 11 }}>
+        {c || '—'}
+      </Text>
     ),
   },
 ];
 
-// ── Expanded row: tabbed Tasks / Insights / Comments ──
-const ExpandedRow = ({ record }) => {
-  const [activeTab, setActiveTab] = useState('tasks');
-
-  const taskCols = [
-    {
-      title: 'Task',
-      dataIndex: 'n',
-      key: 'n',
-      render: (text, t) => (
-        <Text
-          style={{
-            fontSize: 12,
-            textDecoration: t.done ? 'line-through' : 'none',
-            color: t.done ? '#888' : 'inherit',
-          }}
-        >
-          {text}
-        </Text>
-      ),
-    },
-    {
-      title: 'Assignee',
-      dataIndex: 'who',
-      key: 'who',
-      responsive: ['md'],
-      render: (who) => (
-        <Text style={{ fontSize: 12 }}>
-          {who ? (
-            <>
-              <UserOutlined /> {who}
-            </>
-          ) : (
-            <Text type="warning">Unassigned</Text>
-          )}
-        </Text>
-      ),
-    },
-    {
-      title: 'Due',
-      dataIndex: 'due',
-      key: 'due',
-      responsive: ['lg'],
-      render: (due, t) => {
-        if (!due) return <Text type="secondary">—</Text>;
-        const isOverdue = !t.done && due < '2026-10-08';
-        return (
-          <Text type={isOverdue ? 'danger' : 'secondary'} style={{ fontSize: 12 }}>
-            {isOverdue && <WarningOutlined />} {due}
-          </Text>
-        );
-      },
-    },
-    {
-      title: 'Status',
-      dataIndex: 'done',
-      key: 'done',
-      render: (done) =>
-        done ? (
-          <Tag icon={<CheckCircleOutlined />} color="success">
-            Done
-          </Tag>
-        ) : (
-          <Tag icon={<ClockCircleOutlined />} color="processing">
-            In Progress
-          </Tag>
-        ),
-    },
-    {
-      title: 'Comments',
-      key: 'comments',
-      render: (_, t) => (
-        <Text
-          style={{ fontSize: 11, color: '#6366f1', cursor: 'pointer' }}
-          onClick={() => {
-            setActiveTab(`comments-${t.gid}`);
-          }}
-        >
-          <CommentOutlined /> View/Add
-        </Text>
-      ),
-    },
-  ];
-
-  const insight = getProjectInsights(record.proj);
-
-  // Build tabs: Tasks + Insights + one Comments tab per task
-  const tabItems = [
-    {
-      key: 'tasks',
-      label: (
-        <Space size={4}>
-          <ClockCircleOutlined />
-          Tasks ({record.total})
-        </Space>
-      ),
-      children: (
-        <Table
-          columns={taskCols}
-          dataSource={record.tasks.map((t) => ({ ...t, key: t.gid }))}
-          pagination={false}
-          size="small"
-        />
-      ),
-    },
-    {
-      key: 'insights',
-      label: (
-        <Space size={4}>
-          <BarChartOutlined style={{ color: '#6366f1' }} />
-          AI Insights
-        </Space>
-      ),
-      children: (
-        <div style={{ padding: '8px 0' }}>
-          <AIInsightPanel insight={insight} />
-        </div>
-      ),
-    },
-    // One comments tab per task
-    ...record.tasks.map((t) => ({
-      key: `comments-${t.gid}`,
-      label: (
-        <Space size={4}>
-          <CommentOutlined />
-          <Text style={{ fontSize: 12 }} ellipsis>
-            {t.n.length > 20 ? t.n.slice(0, 20) + '…' : t.n}
-          </Text>
-        </Space>
-      ),
-      children: (
-        <div style={{ padding: '8px 0' }}>
-          <TaskComments taskGid={t.gid} taskName={t.n} projectGid={record.gid} />
-        </div>
-      ),
-    })),
-  ];
-
-  return (
-    <div style={{ padding: '8px 16px', background: '#fafafa', borderRadius: 4 }}>
-      <Tabs
-        activeKey={activeTab}
-        onChange={setActiveTab}
-        items={tabItems}
-        size="small"
-        tabBarStyle={{ marginBottom: 12 }}
-      />
-    </div>
-  );
-};
-
+/* ── Main component ── */
 const Projects = () => {
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedProject, setSelectedProject] = useState(null);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [filterVertical, setFilterVertical] = useState(null);
+  const [filterHealth, setFilterHealth] = useState(null);
+  const [filterStatus, setFilterStatus] = useState(null);
 
-  const openInsightDrawer = (record) => {
-    setSelectedProject(record);
-    setDrawerOpen(true);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/projects')
+      .then((r) => {
+        if (!r.ok) throw new Error(`API error ${r.status}`);
+        return r.json();
+      })
+      .then((json) => {
+        if (!cancelled) {
+          setData(json);
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err.message);
+          setLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [retryCount]);
+
+  const handleRetry = () => {
+    setLoading(true);
+    setError(null);
+    setRetryCount((c) => c + 1);
   };
+
+  /* Filter options derived from data */
+  const verticals = [...new Set((data?.projects ?? []).map((p) => p.vertical).filter(Boolean))];
+  const healthValues = [...new Set((data?.projects ?? []).map((p) => p.health).filter(Boolean))];
+  const statusValues = [
+    ...new Set((data?.projects ?? []).map((p) => p.projectStatus).filter(Boolean)),
+  ];
+
+  /* Filtered rows */
+  const rows = (data?.projects ?? [])
+    .filter((p) => {
+      if (filterVertical && p.vertical !== filterVertical) return false;
+      if (filterHealth && p.health !== filterHealth) return false;
+      if (filterStatus && p.projectStatus !== filterStatus) return false;
+      return true;
+    })
+    .map((p) => ({ ...p, key: p.gid }));
+
+  const columns = buildColumns();
 
   return (
     <div>
-      <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
+      {/* ── Header ── */}
+      <Row justify="space-between" align="middle" style={{ marginBottom: 20 }}>
         <Col>
           <Title level={4} style={{ marginBottom: 4 }}>
-            Active Projects
+            Active Use Cases
           </Title>
-          <Text type="secondary">03.Active Projects portfolio · 6 grant research studies</Text>
+          <Text type="secondary">
+            {loading && 'Loading from Asana…'}
+            {error && 'Could not reach Asana'}
+            {data && `${rows.length} of ${data.total} use cases · click a row to expand details`}
+          </Text>
         </Col>
+        {data && (
+          <Col>
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              Updated{' '}
+              {new Date(data.fetchedAt).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </Text>
+          </Col>
+        )}
       </Row>
 
-      <SectionLabel style={{ marginTop: 0 }}>
-        Grant Projects — click a row to expand tasks, insights &amp; comments
-      </SectionLabel>
-
-      <Card>
-        <Table
-          columns={[
-            ...columns,
-            {
-              title: 'Quick Insights',
-              key: 'quickInsights',
-              render: (_, r) => (
-                <Text
-                  style={{
-                    fontSize: 11,
-                    color: '#6366f1',
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openInsightDrawer(r);
-                  }}
-                >
-                  <BarChartOutlined /> AI →
-                </Text>
-              ),
-            },
-          ]}
-          dataSource={rows}
-          expandable={{
-            expandedRowRender: (record) => <ExpandedRow record={record} />,
-          }}
-          pagination={false}
-          size="small"
-          scroll={{ x: 700 }}
+      {/* ── Error ── */}
+      {error && (
+        <Alert
+          type="error"
+          message="Could not load projects"
+          description={`${error} — check ASANA_PAT in Vercel environment variables.`}
+          showIcon
+          action={
+            <Text
+              style={{ fontSize: 12, color: '#6366f1', cursor: 'pointer' }}
+              onClick={handleRetry}
+            >
+              <ReloadOutlined /> Retry
+            </Text>
+          }
+          style={{ marginBottom: 16 }}
         />
+      )}
+
+      {/* ── Filter bar ── */}
+      <SectionLabel style={{ marginTop: 0 }}>
+        <FilterOutlined style={{ marginRight: 6 }} />
+        Filters
+      </SectionLabel>
+      <Card size="small" style={{ marginBottom: 16 }} styles={{ body: { padding: '10px 14px' } }}>
+        <Space size={8} wrap>
+          <Select
+            placeholder="All verticals"
+            allowClear
+            style={{ width: 160, fontSize: 12 }}
+            size="small"
+            onChange={setFilterVertical}
+            disabled={loading}
+            value={filterVertical}
+          >
+            {verticals.map((v) => (
+              <Option key={v} value={v}>
+                {VERTICAL_SHORT[v] ?? v}
+              </Option>
+            ))}
+          </Select>
+          <Select
+            placeholder="All health"
+            allowClear
+            style={{ width: 130, fontSize: 12 }}
+            size="small"
+            onChange={setFilterHealth}
+            disabled={loading}
+            value={filterHealth}
+          >
+            {healthValues.map((h) => (
+              <Option key={h} value={h}>
+                {h}
+              </Option>
+            ))}
+          </Select>
+          <Select
+            placeholder="All statuses"
+            allowClear
+            style={{ width: 140, fontSize: 12 }}
+            size="small"
+            onChange={setFilterStatus}
+            disabled={loading}
+            value={filterStatus}
+          >
+            {statusValues.map((s) => (
+              <Option key={s} value={s}>
+                {s}
+              </Option>
+            ))}
+          </Select>
+          {(filterVertical || filterHealth || filterStatus) && (
+            <Text
+              style={{ fontSize: 11, color: '#6366f1', cursor: 'pointer' }}
+              onClick={() => {
+                setFilterVertical(null);
+                setFilterHealth(null);
+                setFilterStatus(null);
+              }}
+            >
+              Clear filters
+            </Text>
+          )}
+        </Space>
       </Card>
 
-      {/* Quick-access AI Insight Drawer */}
-      <Drawer
-        title={
-          <Space>
-            <BarChartOutlined style={{ color: '#6366f1' }} />
-            <span>AI Project Insights</span>
-            {selectedProject && (
-              <Tag
-                color={
-                  selectedProject.score >= 80
-                    ? 'success'
-                    : selectedProject.score >= 60
-                      ? 'warning'
-                      : 'error'
-                }
-              >
-                {selectedProject.label}
-              </Tag>
-            )}
-          </Space>
-        }
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        width={480}
-        styles={{ body: { padding: 16 } }}
-      >
-        {selectedProject && (
-          <>
-            <Text strong style={{ fontSize: 14, display: 'block', marginBottom: 12 }}>
-              {selectedProject.name}
-            </Text>
-            <AIInsightPanel insight={getProjectInsights(selectedProject.proj)} />
+      {/* ── Loading ── */}
+      {loading && (
+        <Card>
+          {[...Array(8)].map((_, i) => (
+            <Skeleton key={i} active paragraph={false} style={{ marginBottom: 10 }} />
+          ))}
+        </Card>
+      )}
 
-            <div style={{ marginTop: 16 }}>
-              <Text strong style={{ fontSize: 13, display: 'block', marginBottom: 8 }}>
-                <CommentOutlined style={{ color: '#6366f1', marginRight: 6 }} />
-                Task Comments
-              </Text>
-              <Text type="secondary" style={{ fontSize: 12 }}>
-                Expand a project row → Comments tab to view and add task comments
-              </Text>
-            </div>
-          </>
-        )}
-      </Drawer>
+      {/* ── Table ── */}
+      {!loading && data && (
+        <Card styles={{ body: { padding: 0 } }}>
+          <Table
+            columns={columns}
+            dataSource={rows}
+            expandable={{
+              expandedRowRender: (record) => <ProjectDetail record={record} />,
+              rowExpandable: () => true,
+            }}
+            pagination={{
+              pageSize: 20,
+              showSizeChanger: false,
+              showTotal: (total) => `${total} items`,
+              size: 'small',
+            }}
+            size="small"
+            scroll={{ x: 500 }}
+          />
+        </Card>
+      )}
     </div>
   );
 };

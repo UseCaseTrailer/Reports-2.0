@@ -1,477 +1,467 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  Row,
-  Col,
+  Alert,
+  Badge,
   Card,
-  Statistic,
-  Progress,
+  Col,
+  Row,
+  Skeleton,
   Space,
+  Statistic,
   Table,
   Tag,
   Typography,
-  Badge,
-  Drawer,
 } from 'antd';
 import {
-  TrophyOutlined,
-  RiseOutlined,
-  WarningOutlined,
+  BarChartOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
-  ProjectOutlined,
-  TeamOutlined,
-  BarChartOutlined,
+  ReloadOutlined,
+  RiseOutlined,
+  TrophyOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
 import {
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
   Bar,
+  BarChart,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
 } from 'recharts';
 import SectionLabel from '../../components/SectionLabel';
-import AIInsightPanel from '../../components/AIInsightPanel';
-import { PORTFOLIOS, scoreHealth, healthGrade, getPortfolioSummary } from '../../data/pmoData';
-import { getProjectInsights } from '../../data/insightsEngine';
 
 const { Title, Text } = Typography;
 
-const activeGrants = PORTFOLIOS.find((p) => p.name === '03.Active Projects')?.projects || [];
-
-const grantRows = activeGrants.map((proj) => {
-  const hs = scoreHealth(proj.tasks);
-  const grade = healthGrade(hs.v);
-  return {
-    key: proj.gid,
-    gid: proj.gid,
-    name: proj.name,
-    lead: proj.tasks.find((t) => t.who)?.who || '—',
-    end: proj.end,
-    total: hs.N,
-    done: hs.done,
-    ov: hs.ov,
-    score: hs.v,
-    label: grade.label,
-    tag: grade.tag,
-    color: grade.color,
-    proj,
-  };
-});
-
-// Chart data — task completion per project
-const completionChartData = grantRows.map((r) => ({
-  name: r.name.split('–')[0].replace('GRANT-2026-', 'G-').trim(),
-  fullName: r.name,
-  Done: r.done,
-  Remaining: r.total - r.done,
-  Overdue: r.ov,
-  health: r.score,
-  color: r.color,
-}));
-
-// Health distribution pie data
-const healthCounts = {
-  'On Track': grantRows.filter((r) => r.score >= 80).length,
-  'At Risk': grantRows.filter((r) => r.score >= 60 && r.score < 80).length,
-  'Off Track': grantRows.filter((r) => r.score < 60).length,
+/* ── Vertical label shorthands for charts ── */
+const VERTICAL_SHORT = {
+  'Healthcare & Life Sciences': 'Healthcare',
+  'Technology & SaaS': 'Technology',
+  'Manufacturing & Industrial': 'Manufacturing',
+  'Financial Services': 'Financial',
+  'Real Estate & Energy': 'Real Estate',
+  'Food, Hospitality & Retail': 'Food & Retail',
+  'Professional Services & Operations': 'Professional',
 };
-const healthPieData = [
-  { name: 'On Track', value: healthCounts['On Track'], color: '#52c41a' },
-  { name: 'At Risk', value: healthCounts['At Risk'], color: '#faad14' },
-  { name: 'Off Track', value: healthCounts['Off Track'], color: '#ff4d4f' },
-].filter((d) => d.value > 0);
 
-const summary = getPortfolioSummary();
+const STATUS_CFG = {
+  green: { label: 'On Track', color: '#52c41a', tag: 'success' },
+  yellow: { label: 'At Risk', color: '#faad14', tag: 'warning' },
+  red: { label: 'Off Track', color: '#ff4d4f', tag: 'error' },
+  blue: { label: 'In Progress', color: '#6366f1', tag: 'processing' },
+};
 
-// Custom tooltip for bar chart
-const CustomBarTooltip = ({ active, payload, label }) => {
-  if (!active || !payload?.length) return null;
-  const item = completionChartData.find((d) => d.name === label);
+/* ── Vertical summary card ── */
+const VerticalMiniCard = ({ vertical }) => {
+  const withStatus = vertical.items.filter((i) => i.hasStatus).length;
   return (
-    <Card size="small" style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
-      <Text strong style={{ fontSize: 12 }}>
-        {item?.fullName || label}
-      </Text>
-      <div>
-        {payload.map((p) => (
-          <div key={p.dataKey}>
-            <Text style={{ fontSize: 12, color: p.fill }}>
-              {p.dataKey}: {p.value}
+    <Card
+      size="small"
+      style={{ borderLeft: `4px solid ${vertical.color}` }}
+      styles={{ body: { padding: '10px 14px' } }}
+    >
+      <Space direction="vertical" size={2} style={{ width: '100%' }}>
+        <Text strong style={{ fontSize: 12, color: vertical.color }}>
+          {VERTICAL_SHORT[vertical.label] ?? vertical.label}
+        </Text>
+        <Row justify="space-between" align="bottom">
+          <Text style={{ fontSize: 24, fontWeight: 800, color: vertical.color, lineHeight: 1.1 }}>
+            {vertical.items.length}
+          </Text>
+          <Space direction="vertical" size={0} align="end">
+            <Text type="secondary" style={{ fontSize: 10 }}>
+              {vertical.items.filter((i) => i.type === 'portfolio').length} portfolios
             </Text>
-          </div>
-        ))}
-      </div>
-      {item && (
-        <Tag
-          color={item.health >= 80 ? 'success' : item.health >= 60 ? 'warning' : 'error'}
-          style={{ marginTop: 4, fontSize: 11 }}
-        >
-          Health: {item.health}
-        </Tag>
-      )}
-      <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 4 }}>
-        Click for AI insights →
-      </Text>
+            <Text type="secondary" style={{ fontSize: 10 }}>
+              {withStatus} with status
+            </Text>
+          </Space>
+        </Row>
+      </Space>
     </Card>
   );
 };
 
-const columns = [
+/* ── Recent activity columns ── */
+const activityCols = [
   {
     title: 'Project',
     dataIndex: 'name',
     key: 'name',
+    render: (text, r) => (
+      <Space size={6}>
+        <span
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            background: r.colorHex,
+            display: 'inline-block',
+            flexShrink: 0,
+          }}
+        />
+        <Text style={{ fontSize: 12 }}>{text}</Text>
+      </Space>
+    ),
+  },
+  {
+    title: 'Vertical',
+    dataIndex: 'vertical',
+    key: 'vertical',
+    responsive: ['md'],
+    render: (v) => <Tag style={{ fontSize: 10, lineHeight: '16px' }}>{VERTICAL_SHORT[v] ?? v}</Tag>,
+  },
+  {
+    title: 'Status',
+    dataIndex: 'statusColor',
+    key: 'statusColor',
+    render: (sc) => {
+      const cfg = STATUS_CFG[sc];
+      if (!cfg) return <Tag style={{ fontSize: 10 }}>Unknown</Tag>;
+      return (
+        <Tag color={cfg.tag} style={{ fontSize: 10, lineHeight: '16px' }}>
+          {cfg.label}
+        </Tag>
+      );
+    },
+  },
+  {
+    title: 'Latest Update',
+    dataIndex: 'statusExcerpt',
+    key: 'statusExcerpt',
+    responsive: ['lg'],
     render: (text) => (
-      <Text strong style={{ fontSize: 13 }}>
-        {text}
+      <Text type="secondary" style={{ fontSize: 11 }} ellipsis={{ tooltip: text }}>
+        {text || '—'}
       </Text>
     ),
   },
-  { title: 'Lead', dataIndex: 'lead', key: 'lead', responsive: ['md'] },
-  { title: 'Due', dataIndex: 'end', key: 'end', responsive: ['lg'] },
   {
-    title: 'Progress',
-    key: 'progress',
-    responsive: ['md'],
-    render: (_, r) => (
-      <Space direction="vertical" size={0} style={{ width: 120 }}>
-        <Text style={{ fontSize: 11 }}>
-          {r.done}/{r.total} tasks
+    title: 'Updated',
+    dataIndex: 'statusUpdatedAt',
+    key: 'statusUpdatedAt',
+    responsive: ['xl'],
+    render: (d) =>
+      d ? (
+        <Text type="secondary" style={{ fontSize: 10 }}>
+          {new Date(d).toLocaleDateString()}
         </Text>
-        <Progress percent={Math.round((r.done / r.total) * 100)} size="small" showInfo={false} />
-      </Space>
-    ),
-  },
-  {
-    title: 'Health',
-    key: 'health',
-    render: (_, r) => (
-      <Space>
-        <Progress
-          type="circle"
-          percent={r.score}
-          size={36}
-          strokeColor={r.color}
-          format={(p) => <span style={{ fontSize: 10, fontWeight: 700 }}>{p}</span>}
-        />
-        <Tag color={r.tag}>{r.label}</Tag>
-      </Space>
-    ),
-  },
-  {
-    title: 'Overdue',
-    dataIndex: 'ov',
-    key: 'ov',
-    responsive: ['lg'],
-    render: (ov) =>
-      ov > 0 ? (
-        <Badge count={ov} style={{ backgroundColor: '#ff4d4f' }} />
       ) : (
-        <CheckCircleOutlined style={{ color: '#52c41a' }} />
+        '—'
       ),
   },
 ];
 
+/* ── Main component ── */
 const PMO = () => {
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedInsight, setSelectedInsight] = useState(null);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
 
-  const openInsight = (proj) => {
-    setSelectedInsight(getProjectInsights(proj));
-    setDrawerOpen(true);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/solutions')
+      .then((r) => {
+        if (!r.ok) throw new Error(`Asana API error ${r.status}`);
+        return r.json();
+      })
+      .then((json) => {
+        if (!cancelled) {
+          setData(json);
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err.message);
+          setLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [retryCount]);
+
+  const handleRetry = () => {
+    setLoading(true);
+    setError(null);
+    setRetryCount((c) => c + 1);
   };
 
-  const handleBarClick = (data) => {
-    if (!data?.activePayload?.[0]) return;
-    const clicked = completionChartData.find((d) => d.name === data.activeLabel);
-    if (!clicked) return;
-    const proj = activeGrants.find((p) => p.name === clicked.fullName);
-    if (proj) openInsight(proj);
-  };
+  /* Derived metrics */
+  const allItems = data?.verticals?.flatMap((v) => v.items) ?? [];
+  const withStatus = allItems.filter((i) => i.hasStatus);
+  const redItems = allItems.filter((i) => i.statusColor === 'red');
+  const yellowItems = allItems.filter((i) => i.statusColor === 'yellow');
+
+  const verticalChartData = (data?.verticals ?? []).map((v) => ({
+    name: VERTICAL_SHORT[v.label] ?? v.label.slice(0, 13),
+    fullName: v.label,
+    count: v.items.length,
+    color: v.color,
+  }));
+
+  const statusPieData = [
+    {
+      name: 'On Track',
+      value: withStatus.filter((i) => i.statusColor === 'green').length,
+      color: '#52c41a',
+    },
+    { name: 'At Risk', value: yellowItems.length, color: '#faad14' },
+    { name: 'Off Track', value: redItems.length, color: '#ff4d4f' },
+    { name: 'No Update', value: allItems.length - withStatus.length, color: '#d1d5db' },
+  ].filter((d) => d.value > 0);
+
+  const recentActivity = [...withStatus]
+    .sort((a, b) => (b.statusUpdatedAt || '').localeCompare(a.statusUpdatedAt || ''))
+    .slice(0, 10);
 
   return (
     <div>
-      <Row justify="space-between" align="middle" style={{ marginBottom: 24 }} gutter={[16, 16]}>
+      {/* ── Header ── */}
+      <Row justify="space-between" align="middle" style={{ marginBottom: 20 }}>
         <Col>
           <Title level={4} style={{ marginBottom: 4 }}>
             Executive PMO Dashboard
           </Title>
-          <Text type="secondary">Altudo · Oct 8, 2026 · Live Asana sync</Text>
+          <Text type="secondary">
+            {loading && 'Loading from Asana…'}
+            {error && 'Could not reach Asana'}
+            {data &&
+              `Solutions Repository · ${data.total} use cases · ${data.verticals?.length ?? 0} industry verticals`}
+          </Text>
         </Col>
-      </Row>
-
-      <SectionLabel style={{ marginTop: 0 }}>Portfolio Overview</SectionLabel>
-
-      <Row gutter={[16, 16]}>
-        <Col xs={24} sm={12} lg={6}>
-          <Card hoverable>
-            <Statistic
-              title="Active Portfolios"
-              value={summary.totalPortfolios}
-              prefix={<TrophyOutlined style={{ color: '#6366f1' }} />}
-            />
-            <Progress percent={100} showInfo={false} strokeColor="#6366f1" />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card hoverable>
-            <Statistic
-              title="Grant Projects"
-              value={summary.activeGrants}
-              prefix={<ProjectOutlined style={{ color: '#06b6d4' }} />}
-              suffix={
-                <Text type="secondary" style={{ fontSize: 13 }}>
-                  {' '}
-                  active
-                </Text>
-              }
-            />
-            <Progress
-              percent={Math.round((summary.activeGrants / summary.totalProjects) * 100)}
-              showInfo={false}
-              strokeColor="#06b6d4"
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card hoverable>
-            <Statistic
-              title="On Track"
-              value={summary.onTrack}
-              prefix={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
-              suffix={
-                <Text type="secondary" style={{ fontSize: 13 }}>
-                  {' '}
-                  / {summary.activeGrants}
-                </Text>
-              }
-            />
-            <Progress
-              percent={Math.round((summary.onTrack / summary.activeGrants) * 100)}
-              showInfo={false}
-              strokeColor="#52c41a"
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card hoverable>
-            <Statistic
-              title="Avg Health Score"
-              value={summary.avgHealth}
-              prefix={<RiseOutlined style={{ color: '#faad14' }} />}
-              suffix="/100"
-            />
-            <Progress
-              percent={summary.avgHealth}
-              showInfo={false}
-              strokeColor={
-                summary.avgHealth >= 80
-                  ? '#52c41a'
-                  : summary.avgHealth >= 60
-                    ? '#faad14'
-                    : '#ff4d4f'
-              }
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      {/* ── Charts row ── */}
-      <SectionLabel>
-        <BarChartOutlined style={{ marginRight: 6 }} />
-        Portfolio Analytics — Click any bar or card for AI insights
-      </SectionLabel>
-
-      <Row gutter={[16, 16]}>
-        {/* Task completion bar chart */}
-        <Col xs={24} lg={16}>
-          <Card
-            size="small"
-            title={
-              <Text strong style={{ fontSize: 13 }}>
-                Task Completion by Project
-              </Text>
-            }
-          >
-            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 8 }}>
-              Click a bar to open AI insights for that project
+        {data && (
+          <Col>
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              Updated{' '}
+              {new Date(data.fetchedAt).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
             </Text>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart
-                data={completionChartData}
-                onClick={handleBarClick}
-                style={{ cursor: 'pointer' }}
-              >
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 10 }}
-                  interval={0}
-                  angle={-20}
-                  textAnchor="end"
-                  height={40}
-                />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip content={<CustomBarTooltip />} />
-                <Legend iconType="square" wrapperStyle={{ fontSize: 11, paddingTop: 4 }} />
-                <Bar dataKey="Done" stackId="a" fill="#52c41a" name="Done" radius={[0, 0, 0, 0]} />
-                <Bar
-                  dataKey="Remaining"
-                  stackId="a"
-                  fill="#e2e8f0"
-                  name="Remaining"
-                  radius={[4, 4, 0, 0]}
-                />
-                <Bar dataKey="Overdue" fill="#ff4d4f" name="Overdue" />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-        </Col>
-
-        {/* Health distribution pie */}
-        <Col xs={24} lg={8}>
-          <Card
-            size="small"
-            title={
-              <Text strong style={{ fontSize: 13 }}>
-                Health Distribution
-              </Text>
-            }
-            style={{ height: '100%' }}
-          >
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie
-                  data={healthPieData}
-                  cx="50%"
-                  cy="45%"
-                  outerRadius={75}
-                  dataKey="value"
-                  label={({ value }) => `${value}`}
-                  labelLine={true}
-                >
-                  {healthPieData.map((entry) => (
-                    <Cell key={entry.name} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value, name) => [`${value} projects`, name]} />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: 11 }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </Card>
-        </Col>
-      </Row>
-
-      {/* ── Grant health cards ── */}
-      <SectionLabel>Grant Projects Health — 03.Active Projects</SectionLabel>
-
-      <Row gutter={[16, 16]}>
-        {grantRows.map((r) => (
-          <Col xs={24} sm={12} lg={8} key={r.key}>
-            <Card
-              size="small"
-              hoverable
-              style={{ borderLeft: `4px solid ${r.color}`, cursor: 'pointer' }}
-              title={
-                <Text strong style={{ fontSize: 12 }}>
-                  {r.name}
-                </Text>
-              }
-              extra={<Tag color={r.tag}>{r.label}</Tag>}
-              onClick={() => openInsight(r.proj)}
-            >
-              <Row gutter={8}>
-                <Col span={12}>
-                  <Progress
-                    type="circle"
-                    percent={r.score}
-                    size={60}
-                    strokeColor={r.color}
-                    format={(p) => <span style={{ fontSize: 14, fontWeight: 700 }}>{p}</span>}
-                  />
-                </Col>
-                <Col span={12}>
-                  <Space direction="vertical" size={2}>
-                    <Text type="secondary" style={{ fontSize: 11 }}>
-                      <TeamOutlined /> {r.lead}
-                    </Text>
-                    <Text type="secondary" style={{ fontSize: 11 }}>
-                      <ClockCircleOutlined /> Due {r.end}
-                    </Text>
-                    <Text style={{ fontSize: 11 }}>
-                      {r.done}/{r.total} tasks done
-                    </Text>
-                    {r.ov > 0 && (
-                      <Text type="danger" style={{ fontSize: 11 }}>
-                        <WarningOutlined /> {r.ov} overdue
-                      </Text>
-                    )}
-                  </Space>
-                </Col>
-              </Row>
-              <Text type="secondary" style={{ fontSize: 10, marginTop: 8, display: 'block' }}>
-                Click for AI insights →
-              </Text>
-            </Card>
           </Col>
-        ))}
+        )}
       </Row>
 
-      <SectionLabel>Projects Table</SectionLabel>
-
-      <Card>
-        <Table
-          columns={columns}
-          dataSource={grantRows}
-          pagination={false}
-          size="small"
-          scroll={{ x: 600 }}
-          onRow={(record) => ({
-            onClick: () => openInsight(record.proj),
-            style: { cursor: 'pointer' },
-          })}
+      {/* ── Error banner ── */}
+      {error && (
+        <Alert
+          type="error"
+          message="Could not load Asana data"
+          description={`${error} — check that ASANA_PAT is set in Vercel environment variables.`}
+          showIcon
+          action={
+            <Text
+              style={{ fontSize: 12, color: '#6366f1', cursor: 'pointer' }}
+              onClick={handleRetry}
+            >
+              <ReloadOutlined /> Retry
+            </Text>
+          }
+          style={{ marginBottom: 16 }}
         />
-      </Card>
+      )}
 
-      {/* ── AI Insight Drawer ── */}
-      <Drawer
-        title={
-          <Space>
-            <BarChartOutlined style={{ color: '#6366f1' }} />
-            <span>AI Project Insights</span>
-            {selectedInsight && (
-              <Tag
-                color={
-                  selectedInsight.score >= 80
-                    ? 'success'
-                    : selectedInsight.score >= 60
-                      ? 'warning'
-                      : 'error'
+      {/* ── Loading ── */}
+      {loading && (
+        <Row gutter={[16, 16]}>
+          {[...Array(4)].map((_, i) => (
+            <Col xs={24} sm={12} lg={6} key={i}>
+              <Card>
+                <Skeleton active paragraph={false} />
+              </Card>
+            </Col>
+          ))}
+        </Row>
+      )}
+
+      {/* ── Live data ── */}
+      {!loading && data && (
+        <>
+          {/* Off-track alert */}
+          {redItems.length > 0 && (
+            <Alert
+              type="error"
+              showIcon
+              icon={<WarningOutlined />}
+              message={`${redItems.length} item${redItems.length > 1 ? 's' : ''} flagged Off Track`}
+              description={redItems.map((i) => i.name).join(' · ')}
+              style={{ marginBottom: 16 }}
+            />
+          )}
+
+          {/* KPI tiles */}
+          <SectionLabel style={{ marginTop: 0 }}>Portfolio Overview</SectionLabel>
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            <Col xs={12} sm={6}>
+              <Card hoverable style={{ borderTop: '3px solid #6366f1' }}>
+                <Statistic
+                  title="Total Use Cases"
+                  value={data.total}
+                  prefix={<TrophyOutlined style={{ color: '#6366f1' }} />}
+                  valueStyle={{ color: '#6366f1' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={12} sm={6}>
+              <Card hoverable style={{ borderTop: '3px solid #06b6d4' }}>
+                <Statistic
+                  title="Industry Verticals"
+                  value={data.verticals?.length ?? 0}
+                  prefix={<RiseOutlined style={{ color: '#06b6d4' }} />}
+                  valueStyle={{ color: '#06b6d4' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={12} sm={6}>
+              <Card hoverable style={{ borderTop: '3px solid #52c41a' }}>
+                <Statistic
+                  title="With Status Update"
+                  value={withStatus.length}
+                  prefix={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
+                  valueStyle={{ color: '#52c41a' }}
+                />
+              </Card>
+            </Col>
+            <Col xs={12} sm={6}>
+              <Card
+                hoverable
+                style={{ borderTop: `3px solid ${redItems.length > 0 ? '#ff4d4f' : '#faad14'}` }}
+              >
+                <Statistic
+                  title="Flagged (Risk/Off Track)"
+                  value={redItems.length + yellowItems.length}
+                  prefix={
+                    <WarningOutlined
+                      style={{ color: redItems.length > 0 ? '#ff4d4f' : '#faad14' }}
+                    />
+                  }
+                  valueStyle={{ color: redItems.length > 0 ? '#ff4d4f' : '#faad14' }}
+                />
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Charts row */}
+          <SectionLabel>
+            <BarChartOutlined style={{ marginRight: 6 }} />
+            Portfolio Analytics
+          </SectionLabel>
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            <Col xs={24} lg={15}>
+              <Card
+                size="small"
+                title={
+                  <Text strong style={{ fontSize: 13 }}>
+                    Use Cases by Industry Vertical
+                  </Text>
                 }
               >
-                {selectedInsight.label}
-              </Tag>
-            )}
-          </Space>
-        }
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        width={480}
-        styles={{ body: { padding: 16 } }}
-      >
-        {selectedInsight && (
-          <>
-            <Text strong style={{ fontSize: 14, display: 'block', marginBottom: 12 }}>
-              {selectedInsight.name}
-            </Text>
-            <AIInsightPanel insight={selectedInsight} />
-          </>
-        )}
-      </Drawer>
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart
+                    data={verticalChartData}
+                    margin={{ top: 5, right: 10, bottom: 48, left: 0 }}
+                  >
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fontSize: 10 }}
+                      interval={0}
+                      angle={-20}
+                      textAnchor="end"
+                      height={54}
+                    />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip
+                      formatter={(value, _, props) => [
+                        `${value} use cases`,
+                        props.payload.fullName,
+                      ]}
+                    />
+                    <Bar dataKey="count" name="Use Cases" radius={[4, 4, 0, 0]}>
+                      {verticalChartData.map((entry) => (
+                        <Cell key={entry.name} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </Card>
+            </Col>
+            <Col xs={24} lg={9}>
+              <Card
+                size="small"
+                title={
+                  <Text strong style={{ fontSize: 13 }}>
+                    Status Distribution
+                  </Text>
+                }
+                extra={
+                  <Badge
+                    count={withStatus.length}
+                    style={{ backgroundColor: '#6366f1' }}
+                    overflowCount={99}
+                  />
+                }
+                style={{ height: '100%' }}
+              >
+                <ResponsiveContainer width="100%" height={240}>
+                  <PieChart>
+                    <Pie
+                      data={statusPieData}
+                      cx="50%"
+                      cy="48%"
+                      outerRadius={78}
+                      dataKey="value"
+                      label={({ value }) => `${value}`}
+                      labelLine={true}
+                    >
+                      {statusPieData.map((entry) => (
+                        <Cell key={entry.name} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value, name) => [`${value} use cases`, name]} />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: 10 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Vertical mini-cards */}
+          <SectionLabel>Use Cases by Vertical</SectionLabel>
+          <Row gutter={[12, 12]} style={{ marginBottom: 24 }}>
+            {(data.verticals ?? []).map((v) => (
+              <Col xs={24} sm={12} lg={8} xl={6} key={v.label}>
+                <VerticalMiniCard vertical={v} />
+              </Col>
+            ))}
+          </Row>
+
+          {/* Recent activity */}
+          {recentActivity.length > 0 && (
+            <>
+              <SectionLabel>
+                <ClockCircleOutlined style={{ marginRight: 6 }} />
+                Recent Activity — Items with Status Updates
+              </SectionLabel>
+              <Card>
+                <Table
+                  columns={activityCols}
+                  dataSource={recentActivity.map((i) => ({ ...i, key: i.gid }))}
+                  pagination={false}
+                  size="small"
+                  scroll={{ x: 500 }}
+                />
+              </Card>
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 };
