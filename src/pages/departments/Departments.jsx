@@ -2,19 +2,19 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   Alert,
-  Badge,
   Card,
   Col,
   Empty,
+  Progress,
   Row,
   Skeleton,
   Space,
   Statistic,
-  Tabs,
   Tag,
   Typography,
 } from 'antd';
 import { LinkOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -33,7 +33,7 @@ const LABEL_TO_SLUG = Object.fromEntries(
   Object.entries(SLUG_TO_LABEL).map(([slug, label]) => [label, slug])
 );
 
-/* Short tab labels so the tab strip doesn't overflow */
+/* Short labels for nav pills */
 const SHORT_LABEL = {
   healthcare: 'Healthcare',
   technology: 'Technology',
@@ -51,13 +51,147 @@ const STATUS_CFG = {
   blue: { label: 'In Progress', tag: 'processing' },
 };
 
+/* ── Portfolio expand (in-app drill-down) ── */
+const PortfolioExpand = ({ portfolioGid, portfolioColor }) => {
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const load = () => {
+    if (items !== null) {
+      setOpen((o) => !o);
+      return;
+    }
+    setOpen(true);
+    setLoading(true);
+    fetch(`/api/portfolio-items?gid=${portfolioGid}`)
+      .then((r) => {
+        if (!r.ok) throw new Error(`API ${r.status}`);
+        return r.json();
+      })
+      .then((json) => {
+        setItems(json.items || []);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message);
+        setLoading(false);
+      });
+  };
+
+  return (
+    <div style={{ marginTop: 6 }}>
+      <button
+        onClick={load}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 5,
+          padding: '3px 10px',
+          border: `1px solid ${portfolioColor}40`,
+          borderRadius: 12,
+          background: `${portfolioColor}08`,
+          cursor: 'pointer',
+          fontSize: 11,
+          color: portfolioColor,
+          fontWeight: 500,
+        }}
+      >
+        {open ? '▼' : '▶'} {open ? 'Hide' : 'View'} items
+        {items !== null && (
+          <span
+            style={{
+              fontSize: 10,
+              background: `${portfolioColor}20`,
+              borderRadius: 8,
+              padding: '0 5px',
+              lineHeight: '16px',
+            }}
+          >
+            {items.length}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div
+          style={{
+            marginTop: 8,
+            paddingLeft: 12,
+            borderLeft: `2px solid ${portfolioColor}40`,
+          }}
+        >
+          {loading && <Skeleton active paragraph={{ rows: 2 }} />}
+          {error && (
+            <Text type="danger" style={{ fontSize: 11 }}>
+              Could not load portfolio items: {error}
+            </Text>
+          )}
+          {items && items.length === 0 && (
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              No items in this portfolio
+            </Text>
+          )}
+          {items &&
+            items.map((sub) => {
+              const sc = STATUS_CFG[sub.statusColor] ?? null;
+              return (
+                <div
+                  key={sub.gid}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '6px 10px',
+                    marginBottom: 4,
+                    borderRadius: 6,
+                    background: '#fafafa',
+                    border: '1px solid #f0f0f0',
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      background: sub.colorHex,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <Text style={{ fontSize: 12, flex: 1, minWidth: 0 }}>{sub.name}</Text>
+                  {sub.type === 'portfolio' && (
+                    <Tag style={{ fontSize: 9, lineHeight: '14px' }}>Portfolio</Tag>
+                  )}
+                  {sc && (
+                    <Tag color={sc.tag} style={{ fontSize: 9, lineHeight: '14px' }}>
+                      {sc.label}
+                    </Tag>
+                  )}
+                  <a
+                    href={sub.asanaUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ fontSize: 10, color: '#6366f1', flexShrink: 0 }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <LinkOutlined />
+                  </a>
+                </div>
+              );
+            })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 /* ── Use-case card ── */
 const UseCaseCard = ({ item }) => {
   const sc = STATUS_CFG[item.statusColor] ?? null;
   return (
     <Card
       size="small"
-      hoverable
       style={{ borderLeft: `4px solid ${item.colorHex}`, marginBottom: 8 }}
       styles={{ body: { padding: '10px 14px' } }}
     >
@@ -103,6 +237,10 @@ const UseCaseCard = ({ item }) => {
               {item.statusExcerpt}
             </Paragraph>
           )}
+
+          {item.type === 'portfolio' && (
+            <PortfolioExpand portfolioGid={item.gid} portfolioColor={item.colorHex} />
+          )}
         </div>
 
         <a
@@ -115,6 +253,181 @@ const UseCaseCard = ({ item }) => {
           <LinkOutlined /> View
         </a>
       </div>
+    </Card>
+  );
+};
+
+/* ── Industry Analytics Panel ── */
+const IndustryReport = ({ vertical }) => {
+  const items = vertical.items;
+
+  const healthCounts = items.reduce((acc, item) => {
+    const h = item.health || 'Unknown';
+    acc[h] = (acc[h] || 0) + 1;
+    return acc;
+  }, {});
+
+  const healthData = [
+    { name: 'Green', label: 'On Track', color: '#52c41a', count: healthCounts.Green || 0 },
+    { name: 'Yellow', label: 'At Risk', color: '#faad14', count: healthCounts.Yellow || 0 },
+    { name: 'Red', label: 'Off Track', color: '#ff4d4f', count: healthCounts.Red || 0 },
+  ].filter((d) => d.count > 0);
+
+  const hasHealthData = healthData.reduce((s, d) => s + d.count, 0) > 0;
+
+  const withStatus = items.filter((i) => i.hasStatus).length;
+  const statusPct = items.length > 0 ? Math.round((withStatus / items.length) * 100) : 0;
+
+  const portfolios = items.filter((i) => i.type === 'portfolio').length;
+  const projects = items.length - portfolios;
+
+  if (items.length === 0) return null;
+
+  return (
+    <Card
+      size="small"
+      title={
+        <Text strong style={{ fontSize: 13 }}>
+          Industry Analytics
+        </Text>
+      }
+      style={{ marginBottom: 16 }}
+      styles={{ body: { padding: '12px 16px' } }}
+    >
+      <Row gutter={[16, 12]}>
+        {/* Health Distribution */}
+        <Col xs={24} sm={12} md={8}>
+          <Text strong style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
+            Health Distribution
+          </Text>
+          {hasHealthData ? (
+            <>
+              <ResponsiveContainer width="100%" height={110}>
+                <PieChart>
+                  <Pie
+                    data={healthData}
+                    dataKey="count"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={28}
+                    outerRadius={48}
+                  >
+                    {healthData.map((d) => (
+                      <Cell key={d.name} fill={d.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v, n) => [v, n]} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 6,
+                  justifyContent: 'center',
+                  marginTop: 4,
+                }}
+              >
+                {healthData.map((d) => (
+                  <Space size={3} key={d.name}>
+                    <div
+                      style={{ width: 6, height: 6, borderRadius: '50%', background: d.color }}
+                    />
+                    <Text style={{ fontSize: 10 }}>
+                      {d.label}: {d.count}
+                    </Text>
+                  </Space>
+                ))}
+              </div>
+            </>
+          ) : (
+            <Text
+              type="secondary"
+              style={{ fontSize: 11, display: 'block', textAlign: 'center', padding: '16px 0' }}
+            >
+              Health fields not populated in Asana
+            </Text>
+          )}
+        </Col>
+
+        {/* Status Coverage */}
+        <Col xs={24} sm={12} md={8}>
+          <Text strong style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
+            Status Coverage
+          </Text>
+          <div style={{ textAlign: 'center', padding: '4px 0' }}>
+            <Text
+              style={{
+                fontSize: 36,
+                fontWeight: 800,
+                color: statusPct >= 70 ? '#52c41a' : statusPct >= 40 ? '#faad14' : '#ff4d4f',
+                lineHeight: 1.1,
+                display: 'block',
+              }}
+            >
+              {statusPct}%
+            </Text>
+            <Text type="secondary" style={{ fontSize: 11, display: 'block', marginBottom: 10 }}>
+              {withStatus} of {items.length} items updated
+            </Text>
+            <Progress
+              percent={statusPct}
+              showInfo={false}
+              strokeColor={statusPct >= 70 ? '#52c41a' : statusPct >= 40 ? '#faad14' : '#ff4d4f'}
+            />
+          </div>
+        </Col>
+
+        {/* Item Types */}
+        <Col xs={24} sm={24} md={8}>
+          <Text strong style={{ fontSize: 12, display: 'block', marginBottom: 8 }}>
+            Item Types
+          </Text>
+          {[
+            {
+              label: 'Use Cases / Projects',
+              count: projects,
+              color: vertical.color,
+              pct: items.length ? Math.round((projects / items.length) * 100) : 0,
+            },
+            {
+              label: 'Sub-Portfolios',
+              count: portfolios,
+              color: '#6366f1',
+              pct: items.length ? Math.round((portfolios / items.length) * 100) : 0,
+            },
+          ].map((row) => (
+            <div key={row.label} style={{ marginBottom: 10 }}>
+              <Row justify="space-between" style={{ marginBottom: 3 }}>
+                <Space size={4}>
+                  <div
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 2,
+                      background: row.color,
+                    }}
+                  />
+                  <Text style={{ fontSize: 11 }}>{row.label}</Text>
+                </Space>
+                <Text strong style={{ fontSize: 12, color: row.color }}>
+                  {row.count}
+                </Text>
+              </Row>
+              <Progress
+                percent={row.pct}
+                showInfo={false}
+                strokeColor={row.color}
+                size={[undefined, 6]}
+                style={{ margin: 0 }}
+              />
+            </div>
+          ))}
+          <Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: 4 }}>
+            {items.length} total items in this vertical
+          </Text>
+        </Col>
+      </Row>
     </Card>
   );
 };
@@ -221,25 +534,6 @@ const Departments = () => {
   const activeLabel = SLUG_TO_LABEL[activeSlug] ?? SLUG_TO_LABEL.healthcare;
   const activeVertical = data?.verticals?.find((v) => v.label === activeLabel) ?? null;
 
-  const tabItems =
-    data?.verticals?.map((v) => {
-      const s = LABEL_TO_SLUG[v.label] ?? 'professional';
-      return {
-        key: s,
-        label: (
-          <Space size={4}>
-            <span style={{ color: v.color, fontSize: 10 }}>●</span>
-            <span style={{ fontSize: 12 }}>{SHORT_LABEL[s]}</span>
-            <Badge
-              count={v.items.length}
-              size="small"
-              style={{ backgroundColor: v.color, fontSize: 9, boxShadow: 'none' }}
-            />
-          </Space>
-        ),
-      };
-    }) ?? [];
-
   return (
     <div>
       {/* ── Header ── */}
@@ -290,8 +584,8 @@ const Departments = () => {
       {/* ── Loading state ── */}
       {loading && (
         <>
-          <Skeleton.Button active block style={{ height: 40, marginBottom: 1 }} />
-          <Card style={{ borderTop: 'none', borderRadius: '0 4px 4px 4px' }}>
+          <Skeleton.Button active block style={{ height: 40, marginBottom: 8 }} />
+          <Card>
             <LoadingSkeleton />
           </Card>
         </>
@@ -300,22 +594,79 @@ const Departments = () => {
       {/* ── Data loaded ── */}
       {!loading && data && (
         <>
-          <Tabs
-            activeKey={activeSlug}
-            onChange={(key) => navigate(`/dashboard/departments/${key}`)}
-            items={tabItems}
-            type="card"
-            size="small"
-            style={{ marginBottom: 0 }}
-          />
-
-          <Card
-            style={{ borderTop: 'none', borderRadius: '0 4px 4px 4px' }}
-            styles={{ body: { padding: 16 } }}
+          {/* Compact vertical navigation pills */}
+          <div
+            style={{
+              overflowX: 'auto',
+              marginBottom: 12,
+              paddingBottom: 4,
+              WebkitOverflowScrolling: 'touch',
+            }}
           >
+            <Space
+              size={4}
+              style={{ display: 'flex', flexWrap: 'nowrap', minWidth: 'max-content' }}
+            >
+              {data.verticals.map((v) => {
+                const s = LABEL_TO_SLUG[v.label] ?? 'professional';
+                const isActive = s === activeSlug;
+                return (
+                  <button
+                    key={s}
+                    onClick={() => navigate(`/dashboard/departments/${s}`)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      padding: '4px 12px',
+                      borderRadius: 16,
+                      border: `1px solid ${isActive ? v.color : '#d9d9d9'}`,
+                      background: isActive ? `${v.color}18` : 'transparent',
+                      cursor: 'pointer',
+                      fontSize: 11,
+                      fontWeight: isActive ? 600 : 400,
+                      color: isActive ? v.color : '#595959',
+                      whiteSpace: 'nowrap',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: '50%',
+                        background: v.color,
+                        display: 'inline-block',
+                        flexShrink: 0,
+                      }}
+                    />
+                    {SHORT_LABEL[s]}
+                    <span
+                      style={{
+                        fontSize: 9,
+                        background: isActive ? v.color : '#f0f0f0',
+                        color: isActive ? '#fff' : '#8c8c8c',
+                        borderRadius: 8,
+                        padding: '0 5px',
+                        lineHeight: '14px',
+                        display: 'inline-block',
+                        minWidth: 16,
+                        textAlign: 'center',
+                      }}
+                    >
+                      {v.items.length}
+                    </span>
+                  </button>
+                );
+              })}
+            </Space>
+          </div>
+
+          <Card styles={{ body: { padding: 16 } }}>
             {activeVertical ? (
               <>
                 <VerticalSummary vertical={activeVertical} />
+                <IndustryReport vertical={activeVertical} />
                 {activeVertical.items.length === 0 ? (
                   <Empty description="No use cases mapped to this vertical yet" />
                 ) : (

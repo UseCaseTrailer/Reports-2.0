@@ -12,7 +12,7 @@ import {
   Tag,
   Typography,
 } from 'antd';
-import { FilterOutlined, ReloadOutlined } from '@ant-design/icons';
+import { FilterOutlined, LinkOutlined, ReloadOutlined } from '@ant-design/icons';
 import SectionLabel from '../../components/SectionLabel';
 
 const { Title, Text } = Typography;
@@ -42,88 +42,121 @@ const STATUS_TAG = {
 };
 
 /* ── Expanded row: project detail panel ── */
-const ProjectDetail = ({ record }) => (
-  <div
-    style={{
-      padding: '10px 16px',
-      background: '#fafafa',
-      borderRadius: 4,
-      marginTop: 2,
-    }}
-  >
-    <Row gutter={[16, 8]}>
-      <Col xs={24} md={12}>
-        <Space direction="vertical" size={4}>
-          {record.industry && (
+const ProjectDetail = ({ record }) => {
+  const hasCustomFields =
+    record.industry ||
+    record.sector ||
+    record.region ||
+    record.consultant ||
+    record.useCase ||
+    record.client ||
+    record.healthReason;
+  return (
+    <div
+      style={{
+        padding: '10px 16px',
+        background: '#fafafa',
+        borderRadius: 4,
+        marginTop: 2,
+      }}
+    >
+      <Row gutter={[16, 8]}>
+        <Col xs={24} md={12}>
+          <Space direction="vertical" size={4}>
             <Text style={{ fontSize: 12 }}>
-              <b>Industry:</b> {record.industry}
+              <b>Vertical:</b> {record.vertical}
             </Text>
-          )}
-          {record.sector && (
-            <Text style={{ fontSize: 12 }}>
-              <b>Sector:</b> {record.sector}
-            </Text>
-          )}
-          {record.region && (
-            <Text style={{ fontSize: 12 }}>
-              <b>Region:</b> {record.region}
-            </Text>
-          )}
-          {record.consultant && (
-            <Text style={{ fontSize: 12 }}>
-              <b>Consultant:</b> {record.consultant}
-            </Text>
-          )}
-          {record.useCase && (
-            <Text style={{ fontSize: 12 }}>
-              <b>Use Case:</b> {record.useCase}
-            </Text>
-          )}
-          {record.client && (
-            <Text style={{ fontSize: 12 }}>
-              <b>Client:</b> {record.client}
-            </Text>
-          )}
-          {record.healthReason && (
-            <Text style={{ fontSize: 12 }}>
-              <b>Health Reason:</b> {record.healthReason}
-            </Text>
-          )}
-        </Space>
-      </Col>
-      <Col xs={24} md={12}>
-        {record.statusExcerpt ? (
-          <div>
-            <Text style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>
-              Latest Status Update
-            </Text>
-            <div
-              style={{
-                padding: '8px 10px',
-                background: '#f0f4ff',
-                borderRadius: 4,
-                borderLeft: '3px solid #6366f1',
-              }}
-            >
-              <Text type="secondary" style={{ fontSize: 11, lineHeight: '1.5' }}>
-                {record.statusExcerpt}
-              </Text>
-            </div>
-            {record.statusUpdatedAt && (
-              <Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: 4 }}>
-                Updated: {new Date(record.statusUpdatedAt).toLocaleDateString()}
+            {record.industry && (
+              <Text style={{ fontSize: 12 }}>
+                <b>Industry:</b> {record.industry}
               </Text>
             )}
-          </div>
-        ) : (
-          <Text type="secondary" style={{ fontSize: 11 }}>
-            No status update available
-          </Text>
-        )}
-      </Col>
-    </Row>
-  </div>
-);
+            {record.sector && (
+              <Text style={{ fontSize: 12 }}>
+                <b>Sector:</b> {record.sector}
+              </Text>
+            )}
+            {record.region && (
+              <Text style={{ fontSize: 12 }}>
+                <b>Region:</b> {record.region}
+              </Text>
+            )}
+            {record.consultant && (
+              <Text style={{ fontSize: 12 }}>
+                <b>Consultant:</b> {record.consultant}
+              </Text>
+            )}
+            {record.useCase && (
+              <Text style={{ fontSize: 12 }}>
+                <b>Use Case:</b> {record.useCase}
+              </Text>
+            )}
+            {record.client && (
+              <Text style={{ fontSize: 12 }}>
+                <b>Client:</b> {record.client}
+              </Text>
+            )}
+            {record.healthReason && (
+              <Text style={{ fontSize: 12 }}>
+                <b>Health Reason:</b> {record.healthReason}
+              </Text>
+            )}
+            {!hasCustomFields && (
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                Custom fields not populated in Asana
+              </Text>
+            )}
+            <a
+              href={record.asanaUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontSize: 11,
+                color: '#6366f1',
+                marginTop: 4,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+              }}
+            >
+              <LinkOutlined /> Open in Asana
+            </a>
+          </Space>
+        </Col>
+        <Col xs={24} md={12}>
+          {record.statusExcerpt ? (
+            <div>
+              <Text style={{ fontSize: 12, fontWeight: 600, display: 'block', marginBottom: 4 }}>
+                Latest Status Update
+              </Text>
+              <div
+                style={{
+                  padding: '8px 10px',
+                  background: '#f0f4ff',
+                  borderRadius: 4,
+                  borderLeft: '3px solid #6366f1',
+                }}
+              >
+                <Text type="secondary" style={{ fontSize: 11, lineHeight: '1.5' }}>
+                  {record.statusExcerpt}
+                </Text>
+              </div>
+              {record.statusUpdatedAt && (
+                <Text type="secondary" style={{ fontSize: 10, display: 'block', marginTop: 4 }}>
+                  Updated: {new Date(record.statusUpdatedAt).toLocaleDateString()}
+                </Text>
+              )}
+            </div>
+          ) : (
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              No status update available
+            </Text>
+          )}
+        </Col>
+      </Row>
+    </div>
+  );
+};
 
 /* ── Table columns ── */
 const buildColumns = () => [
