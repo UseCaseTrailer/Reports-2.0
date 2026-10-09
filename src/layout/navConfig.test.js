@@ -65,8 +65,12 @@ describe('buildNavItems role filtering', () => {
   });
 
   it('hides no pages from an editor (PMO nav has no role restrictions)', () => {
-    const itemsAdmin = buildNavItems(t, { hasRole: (roles) => !roles || roles.includes(ROLES.ADMIN) });
-    const itemsEditor = buildNavItems(t, { hasRole: (roles) => !roles || roles.includes(ROLES.EDITOR) });
+    const itemsAdmin = buildNavItems(t, {
+      hasRole: (roles) => !roles || roles.includes(ROLES.ADMIN),
+    });
+    const itemsEditor = buildNavItems(t, {
+      hasRole: (roles) => !roles || roles.includes(ROLES.EDITOR),
+    });
     // Both roles see the same items since no page in the PMO nav has a roles guard
     expect(labelsOf(itemsEditor)).toEqual(labelsOf(itemsAdmin));
   });
