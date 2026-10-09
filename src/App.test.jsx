@@ -38,14 +38,16 @@ describe('App', () => {
   it('renders the sidebar navigation from the translation files', async () => {
     renderApp();
 
-    await waitFor(() => expect(screen.getAllByText('Dashboard').length).toBeGreaterThan(0));
+    // App redirects to /dashboard/pmo; wait for the PMO Command Center section label.
+    await waitFor(() =>
+      expect(screen.getAllByText('PMO Command Center').length).toBeGreaterThan(0)
+    );
 
     // Section labels and group titles are always in the DOM. Their children are
     // not: only the group owning the current route is expanded, which is why
-    // this checks for "Management" rather than "Products".
-    expect(screen.getByText('Workspace')).toBeInTheDocument();
-    expect(screen.getByText('Management')).toBeInTheDocument();
-    expect(screen.getByText('Page Library')).toBeInTheDocument();
+    // this checks for "Portfolio & Projects" rather than individual page links.
+    expect(screen.getByText('Portfolio & Projects')).toBeInTheDocument();
+    expect(screen.getByText('Auth Pages')).toBeInTheDocument();
   });
 
   it('shows the account card for the demo user', async () => {

@@ -14,11 +14,11 @@ const t = (key) => key;
 
 describe('getSelectedKey', () => {
   it('matches an exact route', () => {
-    expect(getSelectedKey('/dashboard/products')).toBe('/dashboard/products');
+    expect(getSelectedKey('/dashboard/pmo')).toBe('/dashboard/pmo');
   });
 
   it('ignores a trailing slash', () => {
-    expect(getSelectedKey('/dashboard/products/')).toBe('/dashboard/products');
+    expect(getSelectedKey('/dashboard/pmo/')).toBe('/dashboard/pmo');
   });
 
   it('matches the longest prefix, not the last path segment', () => {
@@ -28,7 +28,7 @@ describe('getSelectedKey', () => {
   });
 
   it('matches a nested child route to its parent page', () => {
-    expect(getSelectedKey('/dashboard/products/p-1001')).toBe('/dashboard/products');
+    expect(getSelectedKey('/dashboard/pmo/some-detail')).toBe('/dashboard/pmo');
   });
 
   it('returns undefined for a route outside the tree', () => {
@@ -38,7 +38,8 @@ describe('getSelectedKey', () => {
 
 describe('findOpenPath', () => {
   it('returns the owning group for a leaf', () => {
-    expect(findOpenPath('/dashboard/charts')).toEqual(['overview']);
+    // /dashboard/portfolios lives in the pmo-group
+    expect(findOpenPath('/dashboard/portfolios')).toEqual(['pmo-group']);
   });
 
   it('returns null for an unknown key', () => {
@@ -46,7 +47,7 @@ describe('findOpenPath', () => {
   });
 
   it('only ever returns keys that are real open keys', () => {
-    const path = findOpenPath('/dashboard/invoices');
+    const path = findOpenPath('/dashboard/notifications');
     path.forEach((key) => expect(ROOT_KEYS).toContain(key));
   });
 });
@@ -57,29 +58,32 @@ describe('buildNavItems role filtering', () => {
       section.children.flatMap((group) => group.children.map((c) => c.key))
     );
 
-  it('shows the admin only page to an admin', () => {
+  it('shows all PMO pages to any role', () => {
+    // PMO nav has no role-restricted pages; every item is visible regardless of role
     const items = buildNavItems(t, { hasRole: (roles) => !roles || roles.includes(ROLES.ADMIN) });
-    expect(labelsOf(items)).toContain('/dashboard/roles');
+    expect(labelsOf(items)).toContain('/dashboard/pmo');
   });
 
-  it('hides the admin only page from an editor', () => {
-    const items = buildNavItems(t, { hasRole: (roles) => !roles || roles.includes(ROLES.EDITOR) });
-    expect(labelsOf(items)).not.toContain('/dashboard/roles');
+  it('hides no pages from an editor (PMO nav has no role restrictions)', () => {
+    const itemsAdmin = buildNavItems(t, { hasRole: (roles) => !roles || roles.includes(ROLES.ADMIN) });
+    const itemsEditor = buildNavItems(t, { hasRole: (roles) => !roles || roles.includes(ROLES.EDITOR) });
+    // Both roles see the same items since no page in the PMO nav has a roles guard
+    expect(labelsOf(itemsEditor)).toEqual(labelsOf(itemsAdmin));
   });
 
   it('keeps every unrestricted page visible to an editor', () => {
     const items = buildNavItems(t, { hasRole: (roles) => !roles || roles.includes(ROLES.EDITOR) });
-    expect(labelsOf(items)).toContain('/dashboard/products');
+    expect(labelsOf(items)).toContain('/dashboard/pmo');
   });
 });
 
 describe('getBreadcrumbTrail', () => {
   it('builds section, group, then page', () => {
-    const trail = getBreadcrumbTrail('/dashboard/products', t);
+    const trail = getBreadcrumbTrail('/dashboard/pmo', t);
     expect(trail.map((crumb) => crumb.label)).toEqual([
-      'nav.sections.workspace',
-      'nav.groups.management',
-      'nav.items.products',
+      'nav.sections.pmoCenter',
+      'nav.groups.pmoGroup',
+      'nav.items.pmo',
     ]);
   });
 

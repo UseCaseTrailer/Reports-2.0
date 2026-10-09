@@ -121,9 +121,18 @@ const PMO = () => (
             title="Grant Projects"
             value={summary.activeGrants}
             prefix={<ProjectOutlined style={{ color: '#06b6d4' }} />}
-            suffix={<Text type="secondary" style={{ fontSize: 13 }}> active</Text>}
+            suffix={
+              <Text type="secondary" style={{ fontSize: 13 }}>
+                {' '}
+                active
+              </Text>
+            }
           />
-          <Progress percent={Math.round((summary.activeGrants / summary.totalProjects) * 100)} showInfo={false} strokeColor="#06b6d4" />
+          <Progress
+            percent={Math.round((summary.activeGrants / summary.totalProjects) * 100)}
+            showInfo={false}
+            strokeColor="#06b6d4"
+          />
         </Card>
       </Col>
       <Col xs={24} sm={12} lg={6}>
@@ -132,9 +141,18 @@ const PMO = () => (
             title="On Track"
             value={summary.onTrack}
             prefix={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
-            suffix={<Text type="secondary" style={{ fontSize: 13 }}> / {summary.activeGrants}</Text>}
+            suffix={
+              <Text type="secondary" style={{ fontSize: 13 }}>
+                {' '}
+                / {summary.activeGrants}
+              </Text>
+            }
           />
-          <Progress percent={Math.round((summary.onTrack / summary.activeGrants) * 100)} showInfo={false} strokeColor="#52c41a" />
+          <Progress
+            percent={Math.round((summary.onTrack / summary.activeGrants) * 100)}
+            showInfo={false}
+            strokeColor="#52c41a"
+          />
         </Card>
       </Col>
       <Col xs={24} sm={12} lg={6}>
@@ -148,7 +166,9 @@ const PMO = () => (
           <Progress
             percent={summary.avgHealth}
             showInfo={false}
-            strokeColor={summary.avgHealth >= 80 ? '#52c41a' : summary.avgHealth >= 60 ? '#faad14' : '#ff4d4f'}
+            strokeColor={
+              summary.avgHealth >= 80 ? '#52c41a' : summary.avgHealth >= 60 ? '#faad14' : '#ff4d4f'
+            }
           />
         </Card>
       </Col>

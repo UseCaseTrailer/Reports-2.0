@@ -18,18 +18,18 @@ describe('PageHeader', () => {
   });
 
   it('builds a breadcrumb from the navigation tree', () => {
-    renderWithProviders(<PageHeader title="Products" />, { route: '/dashboard/products' });
+    renderWithProviders(<PageHeader title="Executive Dashboard" />, { route: '/dashboard/pmo' });
 
-    expect(screen.getByText('Workspace')).toBeInTheDocument();
-    expect(screen.getByText('Management')).toBeInTheDocument();
+    expect(screen.getByText('PMO Command Center')).toBeInTheDocument();
+    expect(screen.getByText('Portfolio & Projects')).toBeInTheDocument();
   });
 
   it('omits the breadcrumb when asked', () => {
-    renderWithProviders(<PageHeader title="Products" breadcrumb={false} />, {
-      route: '/dashboard/products',
+    renderWithProviders(<PageHeader title="Executive Dashboard" breadcrumb={false} />, {
+      route: '/dashboard/pmo',
     });
 
-    expect(screen.queryByText('Workspace')).not.toBeInTheDocument();
+    expect(screen.queryByText('PMO Command Center')).not.toBeInTheDocument();
   });
 });
 
