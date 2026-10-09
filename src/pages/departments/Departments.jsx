@@ -12,17 +12,7 @@ import {
   Progress,
   Empty,
 } from 'antd';
-import {
-  CheckCircleOutlined,
-  WarningOutlined,
-  DollarOutlined,
-  TrophyOutlined,
-  CodeOutlined,
-  TeamOutlined,
-  BarChartOutlined,
-} from '@ant-design/icons';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import SectionLabel from '../../components/SectionLabel';
 import { DEPT_PORTFOLIOS } from '../../data/pmoData';
 
 const { Title, Text } = Typography;

@@ -1,9 +1,8 @@
-import { Table, Tag, Progress, Space, Typography, Card, Row, Col, Badge } from 'antd';
+import { Table, Tag, Progress, Space, Typography, Card, Row, Col } from 'antd';
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   WarningOutlined,
-  TeamOutlined,
   UserOutlined,
 } from '@ant-design/icons';
 import SectionLabel from '../../components/SectionLabel';
@@ -44,7 +43,7 @@ const columns = [
     title: 'Grant ID / Project',
     dataIndex: 'name',
     key: 'name',
-    render: (text, r) => (
+    render: (text) => (
       <Space direction="vertical" size={0}>
         <Text strong style={{ fontSize: 13 }}>
           {text.split('–')[0].trim()}

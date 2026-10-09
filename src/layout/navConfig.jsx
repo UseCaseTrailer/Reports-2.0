@@ -3,14 +3,12 @@ import {
   ExportOutlined,
   IdcardOutlined,
   MessageOutlined,
-  ProjectOutlined,
   RocketOutlined,
   SafetyOutlined,
   TeamOutlined,
   TrophyOutlined,
   WarningOutlined,
 } from '@ant-design/icons';
-import { ROLES } from '@/context/auth-context';
 
 /* ---------------------------------------------------------------------------
  * The navigation tree

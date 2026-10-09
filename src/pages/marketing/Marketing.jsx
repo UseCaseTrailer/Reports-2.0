@@ -16,9 +16,7 @@ import {
   RocketOutlined,
   RiseOutlined,
   DollarOutlined,
-  TrophyOutlined,
   TeamOutlined,
-  BarChartOutlined,
 } from '@ant-design/icons';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import SectionLabel from '../../components/SectionLabel';
@@ -255,9 +253,14 @@ const SECTION_COMPONENTS = {
   cadence: () => <Card><Text type="secondary">Campaign cadence planner and publishing calendar.</Text></Card>,
 };
 
+const SectionRenderer = ({ sectionKey }) => {
+  const Component = SECTION_COMPONENTS[sectionKey];
+  if (!Component) return null;
+  return <Component />;
+};
+
 const Marketing = () => {
   const [activeSection, setActiveSection] = useState('pulse');
-  const ActiveComponent = SECTION_COMPONENTS[activeSection] || (() => null);
 
   return (
     <div>
@@ -285,7 +288,7 @@ const Marketing = () => {
         tabBarStyle={{ marginBottom: 16 }}
       />
 
-      <ActiveComponent />
+      <SectionRenderer sectionKey={activeSection} />
     </div>
   );
 };

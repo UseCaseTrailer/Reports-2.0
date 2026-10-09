@@ -1,10 +1,8 @@
 import { Suspense, lazy } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import DashboardLayout from '@/layout/DashboardLayout';
-import RequireRole from '@/components/RequireRole';
 import PageLoader from '@/components/PageLoader';
 import ErrorPage from '@/pages/errors/ErrorPage';
-import { ROLES } from '@/context/auth-context';
 
 /* ---------------------------------------------------------------------------
  * Every page is a lazy import.
