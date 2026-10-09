@@ -49,18 +49,14 @@ const NAV_TREE = [
         labelKey: 'nav.groups.marketingGroup',
         Icon: RocketOutlined,
         accent: '#F59E0B',
-        items: [
-          { to: '/dashboard/marketing', labelKey: 'nav.items.marketing' },
-        ],
+        items: [{ to: '/dashboard/marketing', labelKey: 'nav.items.marketing' }],
       },
       {
         key: 'departments-group',
         labelKey: 'nav.groups.departmentsGroup',
         Icon: TeamOutlined,
         accent: '#06B6D4',
-        items: [
-          { to: '/dashboard/departments', labelKey: 'nav.items.departments' },
-        ],
+        items: [{ to: '/dashboard/departments', labelKey: 'nav.items.departments' }],
       },
     ],
   },

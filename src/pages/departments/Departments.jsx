@@ -85,9 +85,7 @@ const ProjectCard = ({ proj }) => {
           <div style={{ marginTop: 8 }}>
             <Text style={{ fontSize: 11 }}>
               {proj.tasks.done}/{proj.tasks.total} tasks
-              {proj.tasks.overdue > 0 && (
-                <Text type="danger"> · {proj.tasks.overdue} overdue</Text>
-              )}
+              {proj.tasks.overdue > 0 && <Text type="danger"> · {proj.tasks.overdue} overdue</Text>}
             </Text>
             <Progress percent={pct} size="small" strokeColor={col} style={{ marginTop: 4 }} />
           </div>
@@ -238,8 +236,7 @@ const DeptContent = ({ deptKey }) => {
                   title: 'ROI',
                   dataIndex: 'roi',
                   key: 'roi',
-                  render: (v) =>
-                    v ? <Tag color="success">{v}%</Tag> : '—',
+                  render: (v) => (v ? <Tag color="success">{v}%</Tag> : '—'),
                 },
               ]}
             />

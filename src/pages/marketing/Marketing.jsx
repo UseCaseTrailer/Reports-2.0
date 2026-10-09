@@ -12,13 +12,18 @@ import {
   Progress,
   Segmented,
 } from 'antd';
+import { RocketOutlined, RiseOutlined, DollarOutlined, TeamOutlined } from '@ant-design/icons';
 import {
-  RocketOutlined,
-  RiseOutlined,
-  DollarOutlined,
-  TeamOutlined,
-} from '@ant-design/icons';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from 'recharts';
 import SectionLabel from '../../components/SectionLabel';
 import {
   CAMPAIGNS,
@@ -48,13 +53,23 @@ const PortfolioPulse = () => {
     <div>
       <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
         <Col xs={12} sm={6}>
-          <Statistic title="FY26 Pipeline" value="$6.48M" prefix={<DollarOutlined />} valueStyle={{ color: '#6366f1' }} />
+          <Statistic
+            title="FY26 Pipeline"
+            value="$6.48M"
+            prefix={<DollarOutlined />}
+            valueStyle={{ color: '#6366f1' }}
+          />
         </Col>
         <Col xs={12} sm={6}>
           <Statistic title="Total MQLs" value={1188} prefix={<TeamOutlined />} />
         </Col>
         <Col xs={12} sm={6}>
-          <Statistic title="Avg ROI" value="651%" prefix={<RiseOutlined />} valueStyle={{ color: '#52c41a' }} />
+          <Statistic
+            title="Avg ROI"
+            value="651%"
+            prefix={<RiseOutlined />}
+            valueStyle={{ color: '#52c41a' }}
+          />
         </Col>
         <Col xs={12} sm={6}>
           <Statistic title="Active Campaigns" value={4} prefix={<RocketOutlined />} />
@@ -77,7 +92,14 @@ const PortfolioPulse = () => {
           <Tooltip />
           <Legend />
           <Line type="monotone" dataKey="MQL" stroke="#6366f1" strokeWidth={2} dot={false} />
-          <Line type="monotone" dataKey="Target" stroke="#d1d5db" strokeWidth={1} strokeDasharray="4 4" dot={false} />
+          <Line
+            type="monotone"
+            dataKey="Target"
+            stroke="#d1d5db"
+            strokeWidth={1}
+            strokeDasharray="4 4"
+            dot={false}
+          />
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -127,9 +149,7 @@ const ChannelScorecard = () => {
       title: 'LTV:CAC',
       dataIndex: 'ltvCac',
       key: 'ltvCac',
-      render: (v) => (
-        <Tag color={v >= 10 ? 'success' : v >= 7 ? 'warning' : 'error'}>{v}x</Tag>
-      ),
+      render: (v) => <Tag color={v >= 10 ? 'success' : v >= 7 ? 'warning' : 'error'}>{v}x</Tag>,
     },
     {
       title: 'Trend',
@@ -143,7 +163,14 @@ const ChannelScorecard = () => {
       ),
     },
   ];
-  return <Table columns={cols} dataSource={CHANNEL_SCORECARD.map((r, i) => ({ ...r, key: i }))} pagination={false} size="small" />;
+  return (
+    <Table
+      columns={cols}
+      dataSource={CHANNEL_SCORECARD.map((r, i) => ({ ...r, key: i }))}
+      pagination={false}
+      size="small"
+    />
+  );
 };
 
 /* ── Revenue Funnel ── */
@@ -194,7 +221,12 @@ const PerfMatrix = () => {
       dataIndex: 'status',
       key: 'status',
       render: (s) => {
-        const map = { Active: 'processing', Complete: 'success', Planned: 'default', 'In Review': 'warning' };
+        const map = {
+          Active: 'processing',
+          Complete: 'success',
+          Planned: 'default',
+          'In Review': 'warning',
+        };
         return <Tag color={map[s] || 'default'}>{s}</Tag>;
       },
     },
@@ -239,18 +271,36 @@ const PerfMatrix = () => {
 const SECTION_COMPONENTS = {
   brief: () => (
     <Card>
-      <Text type="secondary">Monday brief content — pull from latest campaign updates and key metrics.</Text>
+      <Text type="secondary">
+        Monday brief content — pull from latest campaign updates and key metrics.
+      </Text>
     </Card>
   ),
   pulse: PortfolioPulse,
   attribution: Attribution,
   matrix: PerfMatrix,
   channel: ChannelScorecard,
-  events: () => <Card><Text type="secondary">Event intelligence — upcoming webinars and sponsorships.</Text></Card>,
-  velocity: () => <Card><Text type="secondary">Sales velocity metrics and pipeline acceleration data.</Text></Card>,
+  events: () => (
+    <Card>
+      <Text type="secondary">Event intelligence — upcoming webinars and sponsorships.</Text>
+    </Card>
+  ),
+  velocity: () => (
+    <Card>
+      <Text type="secondary">Sales velocity metrics and pipeline acceleration data.</Text>
+    </Card>
+  ),
   funnel: RevenueFunnel,
-  lifecycle: () => <Card><Text type="secondary">Customer health scores and churn risk indicators.</Text></Card>,
-  cadence: () => <Card><Text type="secondary">Campaign cadence planner and publishing calendar.</Text></Card>,
+  lifecycle: () => (
+    <Card>
+      <Text type="secondary">Customer health scores and churn risk indicators.</Text>
+    </Card>
+  ),
+  cadence: () => (
+    <Card>
+      <Text type="secondary">Campaign cadence planner and publishing calendar.</Text>
+    </Card>
+  ),
 };
 
 const SectionRenderer = ({ sectionKey }) => {
