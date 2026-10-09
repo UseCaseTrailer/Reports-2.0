@@ -153,9 +153,33 @@ export const ATTRIBUTION = [
 export const CHANNEL_SCORECARD = [
   { channel: 'Paid Search', cpl: 312, convRate: 4.2, cac: 7400, ltv: 38000, ltvCac: 5.1, trend: 8 },
   { channel: 'Email', cpl: 48, convRate: 6.1, cac: 3200, ltv: 38000, ltvCac: 11.9, trend: 3 },
-  { channel: 'Paid Social', cpl: 197, convRate: 3.8, cac: 5200, ltv: 38000, ltvCac: 7.3, trend: -5 },
-  { channel: 'Content / SEO', cpl: 87, convRate: 5.4, cac: 4100, ltv: 38000, ltvCac: 9.3, trend: 12 },
-  { channel: 'Events / Webinar', cpl: 145, convRate: 7.9, cac: 3800, ltv: 38000, ltvCac: 10.0, trend: 18 },
+  {
+    channel: 'Paid Social',
+    cpl: 197,
+    convRate: 3.8,
+    cac: 5200,
+    ltv: 38000,
+    ltvCac: 7.3,
+    trend: -5,
+  },
+  {
+    channel: 'Content / SEO',
+    cpl: 87,
+    convRate: 5.4,
+    cac: 4100,
+    ltv: 38000,
+    ltvCac: 9.3,
+    trend: 12,
+  },
+  {
+    channel: 'Events / Webinar',
+    cpl: 145,
+    convRate: 7.9,
+    cac: 3800,
+    ltv: 38000,
+    ltvCac: 10.0,
+    trend: 18,
+  },
   { channel: 'Partner', cpl: 210, convRate: 5.2, cac: 4800, ltv: 38000, ltvCac: 7.9, trend: 22 },
 ];
 
