@@ -1,594 +1,333 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
-  Row,
-  Col,
+  Alert,
+  Badge,
   Card,
-  Tabs,
-  Table,
-  Tag,
-  Statistic,
-  Space,
-  Typography,
-  Progress,
+  Col,
   Empty,
-  Drawer,
+  Row,
+  Skeleton,
+  Space,
+  Statistic,
+  Tabs,
+  Tag,
+  Typography,
 } from 'antd';
-import {
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
-import { BarChartOutlined } from '@ant-design/icons';
-import { DEPT_PORTFOLIOS } from '../../data/pmoData';
-import AIInsightPanel from '../../components/AIInsightPanel';
-import { getDeptProjectInsights } from '../../data/insightsEngine';
+import { LinkOutlined, ReloadOutlined } from '@ant-design/icons';
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 
-const STATUS_COLOR = {
-  green: '#52c41a',
-  yellow: '#faad14',
-  red: '#ff4d4f',
-  complete: '#6366f1',
+/* ── Slug ↔ vertical label maps (must match api/solutions.js VERTICAL_ORDER) ── */
+const SLUG_TO_LABEL = {
+  healthcare: 'Healthcare & Life Sciences',
+  technology: 'Technology & SaaS',
+  manufacturing: 'Manufacturing & Industrial',
+  financial: 'Financial Services',
+  realestate: 'Real Estate & Energy',
+  food: 'Food, Hospitality & Retail',
+  professional: 'Professional Services & Operations',
 };
 
-const STATUS_TAG = {
-  green: 'success',
-  yellow: 'warning',
-  red: 'error',
-  complete: 'processing',
-};
-
-const STATUS_LABEL = {
-  green: 'On Track',
-  yellow: 'At Risk',
-  red: 'Off Track',
-  complete: 'Complete',
-};
-
-// Category colors for pie chart
-const CAT_COLORS = [
-  '#6366f1',
-  '#06b6d4',
-  '#10b981',
-  '#f59e0b',
-  '#ef4444',
-  '#8b5cf6',
-  '#ec4899',
-  '#14b8a6',
-];
-
-/* ── KPI row ── */
-const KpiRow = ({ kpis }) => (
-  <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
-    {kpis.map((kpi, i) => (
-      <Col xs={12} sm={8} lg={4} key={i}>
-        <Card size="small" style={{ borderTop: `3px solid ${kpi.c}` }}>
-          <Statistic
-            title={<Text style={{ fontSize: 11 }}>{kpi.l}</Text>}
-            value={kpi.v}
-            valueStyle={{ fontSize: 18, color: kpi.c }}
-          />
-          <Text type="secondary" style={{ fontSize: 11 }}>
-            {kpi.s}
-          </Text>
-        </Card>
-      </Col>
-    ))}
-  </Row>
+const LABEL_TO_SLUG = Object.fromEntries(
+  Object.entries(SLUG_TO_LABEL).map(([slug, label]) => [label, slug])
 );
 
-/* ── Project cards ── */
-const ProjectCard = ({ proj, onInsightClick }) => {
-  const totalTasks = proj.tasks.total || 1;
-  const pct = Math.round((proj.tasks.done / totalTasks) * 100);
-  const col = STATUS_COLOR[proj.status] || '#888';
+/* Short tab labels so the tab strip doesn't overflow */
+const SHORT_LABEL = {
+  healthcare: 'Healthcare',
+  technology: 'Technology',
+  manufacturing: 'Manufacturing',
+  financial: 'Financial',
+  realestate: 'Real Estate',
+  food: 'Food & Retail',
+  professional: 'Professional',
+};
+
+const STATUS_CFG = {
+  green: { label: 'On Track', tag: 'success' },
+  yellow: { label: 'At Risk', tag: 'warning' },
+  red: { label: 'Off Track', tag: 'error' },
+  blue: { label: 'In Progress', tag: 'processing' },
+};
+
+/* ── Use-case card ── */
+const UseCaseCard = ({ item }) => {
+  const sc = STATUS_CFG[item.statusColor] ?? null;
   return (
     <Card
       size="small"
       hoverable
-      style={{ marginBottom: 12, borderLeft: `4px solid ${col}`, cursor: 'pointer' }}
-      title={
-        <Space>
-          <Text strong style={{ fontSize: 13 }}>
-            {proj.name}
-          </Text>
-          <Tag color={STATUS_TAG[proj.status]}>{STATUS_LABEL[proj.status]}</Tag>
-          <Tag>{proj.cat}</Tag>
-        </Space>
-      }
-      extra={
-        <Text
-          type="secondary"
-          style={{ fontSize: 11, cursor: 'pointer', color: '#6366f1' }}
-          onClick={() => onInsightClick(proj)}
-        >
-          AI insights →
-        </Text>
-      }
+      style={{ borderLeft: `4px solid ${item.colorHex}`, marginBottom: 8 }}
+      styles={{ body: { padding: '10px 14px' } }}
     >
-      <Row gutter={[16, 8]}>
-        <Col xs={24} md={16}>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {proj.note}
-          </Text>
-          <div style={{ marginTop: 8 }}>
-            <Text style={{ fontSize: 11 }}>
-              {proj.tasks.done}/{proj.tasks.total} tasks
-              {proj.tasks.overdue > 0 && <Text type="danger"> · {proj.tasks.overdue} overdue</Text>}
-            </Text>
-            <Progress percent={pct} size="small" strokeColor={col} style={{ marginTop: 4 }} />
-          </div>
-        </Col>
-        <Col xs={24} md={8}>
-          <Row gutter={[8, 4]}>
-            {proj.metrics.map((m, i) => (
-              <Col span={12} key={i}>
-                <Text type="secondary" style={{ fontSize: 10, display: 'block' }}>
-                  {m.l}
-                </Text>
-                <Text strong style={{ fontSize: 12 }}>
-                  {m.v}
-                </Text>
-              </Col>
-            ))}
-          </Row>
-        </Col>
-      </Row>
-    </Card>
-  );
-};
-
-/* ── Budget tooltip — defined at module level to avoid ESLint react/no-unstable-nested-components ── */
-const CustomBarTooltip = ({ active, payload, label }) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <Card size="small" style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
-      <Text strong style={{ fontSize: 12 }}>
-        {label}
-      </Text>
-      {payload.map((p) => (
-        <div key={p.dataKey}>
-          <Text style={{ fontSize: 12, color: p.fill }}>
-            {p.dataKey}: ${p.value}K
-          </Text>
-        </div>
-      ))}
-    </Card>
-  );
-};
-
-/* ── Enhanced Budget view ── */
-const BudgetView = ({ dept }) => {
-  if (!dept.projects.length) return <Empty description="No budget data yet" />;
-
-  const chartData = dept.projects.map((p) => ({
-    name: p.name.length > 20 ? p.name.slice(0, 20) + '…' : p.name,
-    Budget: Math.round(p.budget / 1000),
-    Spent: Math.round(p.spent / 1000),
-    Remaining: Math.round((p.budget - p.spent) / 1000),
-    utilPct: p.pctSpent,
-  }));
-
-  // Category budget totals for pie
-  const catMap = {};
-  dept.projects.forEach((p) => {
-    const cat = p.cat || 'Other';
-    if (!catMap[cat]) catMap[cat] = 0;
-    catMap[cat] += p.budget;
-  });
-  const pieCatData = Object.entries(catMap).map(([name, value]) => ({
-    name,
-    value: Math.round(value / 1000),
-  }));
-
-  // Spend utilisation donut data
-  const totalBudget = dept.projects.reduce((s, p) => s + p.budget, 0);
-  const totalSpent = dept.projects.reduce((s, p) => s + p.spent, 0);
-  const utilPct = Math.round((totalSpent / totalBudget) * 100);
-  const donutData = [
-    { name: 'Spent', value: Math.round(totalSpent / 1000) },
-    { name: 'Remaining', value: Math.round((totalBudget - totalSpent) / 1000) },
-  ];
-
-  return (
-    <div>
-      {/* Summary stat row */}
-      <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
-        <Col xs={24} sm={8}>
-          <Card size="small" style={{ borderTop: '3px solid #6366f1' }}>
-            <Statistic
-              title="Total Budget"
-              value={`$${Math.round(totalBudget / 1000)}K`}
-              valueStyle={{ color: '#6366f1' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Card
-            size="small"
-            style={{ borderTop: `3px solid ${utilPct > 90 ? '#ff4d4f' : '#52c41a'}` }}
-          >
-            <Statistic
-              title="Total Spent"
-              value={`$${Math.round(totalSpent / 1000)}K`}
-              valueStyle={{ color: utilPct > 90 ? '#ff4d4f' : '#52c41a' }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={8}>
-          <Card size="small" style={{ borderTop: '3px solid #faad14' }}>
-            <Statistic
-              title="Budget Utilisation"
-              value={`${utilPct}%`}
-              valueStyle={{
-                color: utilPct > 90 ? '#ff4d4f' : utilPct > 70 ? '#faad14' : '#52c41a',
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          gap: 8,
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Space size={6} wrap>
+            <span
+              style={{
+                display: 'inline-block',
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: item.colorHex,
+                flexShrink: 0,
               }}
             />
-          </Card>
-        </Col>
-      </Row>
+            <Text strong style={{ fontSize: 13 }}>
+              {item.name}
+            </Text>
+            {item.type === 'portfolio' && (
+              <Tag style={{ fontSize: 10, lineHeight: '16px' }}>Portfolio</Tag>
+            )}
+            {sc && (
+              <Tag color={sc.tag} style={{ fontSize: 10, lineHeight: '16px' }}>
+                {sc.label}
+              </Tag>
+            )}
+          </Space>
 
-      {/* Charts row */}
-      <Row gutter={[16, 16]}>
-        {/* Grouped bar chart */}
-        <Col xs={24} lg={14}>
-          <Card
-            size="small"
-            title={
-              <Text strong style={{ fontSize: 13 }}>
-                Budget vs Spent by Project
-              </Text>
-            }
-          >
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 8 }}>
-                <XAxis
-                  dataKey="name"
-                  tick={{ fontSize: 10 }}
-                  interval={0}
-                  angle={-15}
-                  textAnchor="end"
-                  height={50}
-                />
-                <YAxis tick={{ fontSize: 10 }} unit="K" />
-                <Tooltip content={<CustomBarTooltip />} />
-                <Legend iconType="square" wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="Budget" fill="#c4b5fd" name="Budget ($K)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Spent" fill="#6366f1" name="Spent ($K)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-        </Col>
+          {item.statusExcerpt && (
+            <Paragraph
+              type="secondary"
+              ellipsis={{ rows: 2 }}
+              style={{ fontSize: 11, marginTop: 4, marginBottom: 0, lineHeight: '1.5' }}
+            >
+              {item.statusExcerpt}
+            </Paragraph>
+          )}
+        </div>
 
-        {/* Right column: Pie + Donut */}
-        <Col xs={24} lg={10}>
-          <Row gutter={[16, 16]}>
-            {/* Category allocation pie */}
-            <Col span={24}>
-              <Card
-                size="small"
-                title={
-                  <Text strong style={{ fontSize: 13 }}>
-                    Budget by Category
-                  </Text>
-                }
-              >
-                <ResponsiveContainer width="100%" height={130}>
-                  <PieChart>
-                    <Pie
-                      data={pieCatData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={50}
-                      dataKey="value"
-                      label={({ name, value }) => `${name}: $${value}K`}
-                      labelLine={false}
-                    >
-                      {pieCatData.map((_, idx) => (
-                        <Cell key={idx} fill={CAT_COLORS[idx % CAT_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(v) => `$${v}K`} />
-                    <Legend iconType="circle" wrapperStyle={{ fontSize: 10 }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </Card>
-            </Col>
-
-            {/* Utilisation donut */}
-            <Col span={24}>
-              <Card
-                size="small"
-                title={
-                  <Text strong style={{ fontSize: 13 }}>
-                    Spend Utilisation
-                  </Text>
-                }
-              >
-                <ResponsiveContainer width="100%" height={120}>
-                  <PieChart>
-                    <Pie
-                      data={donutData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={30}
-                      outerRadius={50}
-                      dataKey="value"
-                      startAngle={90}
-                      endAngle={-270}
-                    >
-                      <Cell fill={utilPct > 90 ? '#ff4d4f' : '#6366f1'} />
-                      <Cell fill="#e2e8f0" />
-                    </Pie>
-                    <Tooltip formatter={(v) => `$${v}K`} />
-                    <Legend iconType="circle" wrapperStyle={{ fontSize: 10 }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </Card>
-            </Col>
-          </Row>
-        </Col>
-      </Row>
-
-      {/* Per-project utilisation bars */}
-      <Card
-        size="small"
-        title={
-          <Text strong style={{ fontSize: 13 }}>
-            Budget Utilisation per Project
-          </Text>
-        }
-        style={{ marginTop: 16 }}
-      >
-        {dept.projects.map((proj) => (
-          <div key={proj.gid} style={{ marginBottom: 10 }}>
-            <Row justify="space-between">
-              <Text style={{ fontSize: 12 }}>{proj.name}</Text>
-              <Text
-                style={{
-                  fontSize: 12,
-                  color:
-                    proj.pctSpent > 90 ? '#ff4d4f' : proj.pctSpent > 70 ? '#faad14' : '#52c41a',
-                }}
-              >
-                {proj.pctSpent}% (${Math.round(proj.spent / 1000)}K / $
-                {Math.round(proj.budget / 1000)}K)
-              </Text>
-            </Row>
-            <Progress
-              percent={proj.pctSpent}
-              size="small"
-              showInfo={false}
-              strokeColor={
-                proj.pctSpent > 90 ? '#ff4d4f' : proj.pctSpent > 70 ? '#faad14' : '#52c41a'
-              }
-            />
-          </div>
-        ))}
-      </Card>
-    </div>
+        <a
+          href={item.asanaUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ fontSize: 11, color: '#6366f1', flexShrink: 0, whiteSpace: 'nowrap' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <LinkOutlined /> View
+        </a>
+      </div>
+    </Card>
   );
 };
 
-/* ── Department content ── */
-const DeptContent = ({ deptKey }) => {
-  const dept = DEPT_PORTFOLIOS[deptKey];
-  const [section, setSection] = useState('overview');
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedInsight, setSelectedInsight] = useState(null);
-
-  const openInsight = (proj) => {
-    setSelectedInsight(getDeptProjectInsights(proj));
-    setDrawerOpen(true);
-  };
-
-  if (!dept) return <Empty />;
-
-  const tabs = [
-    { key: 'overview', label: 'Overview' },
-    { key: 'projects', label: 'Projects' },
-    { key: 'budget', label: 'Budget & Analytics' },
-  ];
+/* ── Summary tiles above the card list ── */
+const VerticalSummary = ({ vertical }) => {
+  const total = vertical.items.length;
+  const withStatus = vertical.items.filter((i) => i.hasStatus).length;
+  const portfolios = vertical.items.filter((i) => i.type === 'portfolio').length;
 
   return (
-    <div>
-      {dept.kpis.length > 0 && <KpiRow kpis={dept.kpis} />}
-
-      <Tabs activeKey={section} onChange={setSection} items={tabs} />
-
-      {section === 'overview' && (
-        <div>
-          {dept.projects.length === 0 ? (
-            <Empty description="No projects in this department portfolio yet" />
-          ) : (
-            <Row gutter={[16, 0]}>
-              {dept.projects.map((p) => (
-                <Col span={24} key={p.gid}>
-                  <ProjectCard proj={p} onInsightClick={openInsight} />
-                </Col>
-              ))}
-            </Row>
-          )}
-        </div>
-      )}
-
-      {section === 'projects' && (
-        <div>
-          {dept.projects.length === 0 ? (
-            <Empty description="No projects yet" />
-          ) : (
-            <Table
-              size="small"
-              pagination={false}
-              scroll={{ x: 600 }}
-              dataSource={dept.projects.map((p) => ({ ...p, key: p.gid }))}
-              onRow={(record) => ({
-                onClick: () => openInsight(record),
-                style: { cursor: 'pointer' },
-              })}
-              columns={[
-                {
-                  title: 'Project',
-                  dataIndex: 'name',
-                  key: 'name',
-                  render: (t) => <Text style={{ fontSize: 12 }}>{t}</Text>,
-                },
-                {
-                  title: 'Status',
-                  dataIndex: 'status',
-                  key: 'status',
-                  render: (s) => <Tag color={STATUS_TAG[s]}>{STATUS_LABEL[s]}</Tag>,
-                },
-                {
-                  title: 'Category',
-                  dataIndex: 'cat',
-                  key: 'cat',
-                  responsive: ['md'],
-                  render: (c) => <Tag>{c}</Tag>,
-                },
-                {
-                  title: 'Tasks',
-                  key: 'tasks',
-                  responsive: ['md'],
-                  render: (_, r) => (
-                    <Space direction="vertical" size={0}>
-                      <Text style={{ fontSize: 11 }}>
-                        {r.tasks.done}/{r.tasks.total}
-                      </Text>
-                      <Progress
-                        percent={Math.round((r.tasks.done / (r.tasks.total || 1)) * 100)}
-                        size="small"
-                        showInfo={false}
-                        strokeColor={STATUS_COLOR[r.status]}
-                        style={{ width: 80 }}
-                      />
-                    </Space>
-                  ),
-                },
-                {
-                  title: 'Budget',
-                  key: 'budget',
-                  responsive: ['lg'],
-                  render: (_, r) =>
-                    r.budget ? (
-                      <Space direction="vertical" size={0}>
-                        <Text style={{ fontSize: 11 }}>${(r.budget / 1000).toFixed(0)}K total</Text>
-                        <Text type="secondary" style={{ fontSize: 11 }}>
-                          ${(r.spent / 1000).toFixed(0)}K spent ({r.pctSpent}%)
-                        </Text>
-                        <Progress
-                          percent={r.pctSpent}
-                          size="small"
-                          showInfo={false}
-                          strokeColor={
-                            r.pctSpent > 90 ? '#ff4d4f' : r.pctSpent > 70 ? '#faad14' : '#52c41a'
-                          }
-                          style={{ width: 80 }}
-                        />
-                      </Space>
-                    ) : (
-                      '—'
-                    ),
-                },
-                {
-                  title: 'ROI',
-                  dataIndex: 'roi',
-                  key: 'roi',
-                  render: (v) => (v ? <Tag color="success">{v}%</Tag> : '—'),
-                },
-                {
-                  title: 'Insights',
-                  key: 'insights',
-                  render: (_, r) => (
-                    <Text
-                      style={{ fontSize: 11, color: '#6366f1', cursor: 'pointer' }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openInsight(r);
-                      }}
-                    >
-                      <BarChartOutlined /> AI →
-                    </Text>
-                  ),
-                },
-              ]}
-            />
-          )}
-        </div>
-      )}
-
-      {section === 'budget' && <BudgetView dept={dept} />}
-
-      {/* AI Insight Drawer */}
-      <Drawer
-        title={
-          <Space>
-            <BarChartOutlined style={{ color: '#6366f1' }} />
-            <span>AI Project Insights</span>
-          </Space>
-        }
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        width={460}
-        styles={{ body: { padding: 16 } }}
-      >
-        {selectedInsight && (
-          <>
-            <Text strong style={{ fontSize: 14, display: 'block', marginBottom: 12 }}>
-              {selectedInsight.name}
-            </Text>
-            <AIInsightPanel insight={selectedInsight} />
-          </>
-        )}
-      </Drawer>
-    </div>
+    <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+      <Col xs={8}>
+        <Card size="small" style={{ borderTop: `3px solid ${vertical.color}` }}>
+          <Statistic
+            title={<Text style={{ fontSize: 11 }}>Use Cases</Text>}
+            value={total}
+            valueStyle={{ fontSize: 22, color: vertical.color }}
+          />
+        </Card>
+      </Col>
+      <Col xs={8}>
+        <Card size="small" style={{ borderTop: '3px solid #52c41a' }}>
+          <Statistic
+            title={<Text style={{ fontSize: 11 }}>With Status</Text>}
+            value={withStatus}
+            valueStyle={{ fontSize: 22, color: '#52c41a' }}
+          />
+        </Card>
+      </Col>
+      <Col xs={8}>
+        <Card size="small" style={{ borderTop: '3px solid #6366f1' }}>
+          <Statistic
+            title={<Text style={{ fontSize: 11 }}>Sub-Portfolios</Text>}
+            value={portfolios}
+            valueStyle={{ fontSize: 22, color: '#6366f1' }}
+          />
+        </Card>
+      </Col>
+    </Row>
   );
 };
+
+/* ── Loading skeleton ── */
+const LoadingSkeleton = () => (
+  <div>
+    <Row gutter={[12, 12]} style={{ marginBottom: 16 }}>
+      {[...Array(3)].map((_, i) => (
+        <Col xs={8} key={i}>
+          <Card size="small">
+            <Skeleton active paragraph={false} />
+          </Card>
+        </Col>
+      ))}
+    </Row>
+    {[...Array(7)].map((_, i) => (
+      <Card key={i} size="small" style={{ marginBottom: 8 }}>
+        <Skeleton active paragraph={{ rows: 1 }} />
+      </Card>
+    ))}
+  </div>
+);
 
 /* ── Main component ── */
 const Departments = () => {
-  const [activeDept, setActiveDept] = useState('engineering');
+  const { vertical: slug } = useParams();
+  const navigate = useNavigate();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
 
-  const deptTabs = Object.entries(DEPT_PORTFOLIOS).map(([key, dept]) => ({
-    key,
-    label: (
-      <Space size={4}>
-        <span style={{ color: dept.color }}>■</span>
-        <span>{dept.name}</span>
-      </Space>
-    ),
-  }));
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/solutions')
+      .then((r) => {
+        if (!r.ok) throw new Error(`Asana API error ${r.status}`);
+        return r.json();
+      })
+      .then((json) => {
+        if (!cancelled) {
+          setData(json);
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err.message);
+          setLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [retryCount]);
+
+  const handleRetry = () => {
+    setLoading(true);
+    setError(null);
+    setRetryCount((c) => c + 1);
+  };
+
+  const activeSlug = slug ?? 'healthcare';
+  const activeLabel = SLUG_TO_LABEL[activeSlug] ?? SLUG_TO_LABEL.healthcare;
+  const activeVertical = data?.verticals?.find((v) => v.label === activeLabel) ?? null;
+
+  const tabItems =
+    data?.verticals?.map((v) => {
+      const s = LABEL_TO_SLUG[v.label] ?? 'professional';
+      return {
+        key: s,
+        label: (
+          <Space size={4}>
+            <span style={{ color: v.color, fontSize: 10 }}>●</span>
+            <span style={{ fontSize: 12 }}>{SHORT_LABEL[s]}</span>
+            <Badge
+              count={v.items.length}
+              size="small"
+              style={{ backgroundColor: v.color, fontSize: 9, boxShadow: 'none' }}
+            />
+          </Space>
+        ),
+      };
+    }) ?? [];
 
   return (
     <div>
-      <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
+      {/* ── Header ── */}
+      <Row justify="space-between" align="middle" style={{ marginBottom: 20 }}>
         <Col>
           <Title level={4} style={{ marginBottom: 4 }}>
-            Department Portfolios
+            Solutions Repository
           </Title>
-          <Text type="secondary">Engineering · Sales · Finance · Project Management</Text>
+          <Text type="secondary">
+            {loading && 'Loading from Asana…'}
+            {error && 'Could not reach Asana'}
+            {data &&
+              `${data.total} use cases across ${data.verticals?.length ?? 0} industry verticals`}
+          </Text>
         </Col>
+        {data && (
+          <Col>
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              Updated{' '}
+              {new Date(data.fetchedAt).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </Text>
+          </Col>
+        )}
       </Row>
 
-      <Tabs
-        activeKey={activeDept}
-        onChange={setActiveDept}
-        items={deptTabs}
-        type="card"
-        style={{ marginBottom: 0 }}
-      />
+      {/* ── Error banner ── */}
+      {error && (
+        <Alert
+          type="error"
+          message="Could not load Solutions Repository"
+          description={`${error} — check that ASANA_PAT is set in Vercel environment variables.`}
+          showIcon
+          action={
+            <Text
+              style={{ fontSize: 12, color: '#6366f1', cursor: 'pointer' }}
+              onClick={handleRetry}
+            >
+              <ReloadOutlined /> Retry
+            </Text>
+          }
+          style={{ marginBottom: 16 }}
+        />
+      )}
 
-      <Card style={{ borderTop: 'none', borderRadius: '0 4px 4px 4px' }}>
-        <DeptContent deptKey={activeDept} />
-      </Card>
+      {/* ── Loading state ── */}
+      {loading && (
+        <>
+          <Skeleton.Button active block style={{ height: 40, marginBottom: 1 }} />
+          <Card style={{ borderTop: 'none', borderRadius: '0 4px 4px 4px' }}>
+            <LoadingSkeleton />
+          </Card>
+        </>
+      )}
+
+      {/* ── Data loaded ── */}
+      {!loading && data && (
+        <>
+          <Tabs
+            activeKey={activeSlug}
+            onChange={(key) => navigate(`/dashboard/departments/${key}`)}
+            items={tabItems}
+            type="card"
+            size="small"
+            style={{ marginBottom: 0 }}
+          />
+
+          <Card
+            style={{ borderTop: 'none', borderRadius: '0 4px 4px 4px' }}
+            styles={{ body: { padding: 16 } }}
+          >
+            {activeVertical ? (
+              <>
+                <VerticalSummary vertical={activeVertical} />
+                {activeVertical.items.length === 0 ? (
+                  <Empty description="No use cases mapped to this vertical yet" />
+                ) : (
+                  activeVertical.items.map((item) => <UseCaseCard key={item.gid} item={item} />)
+                )}
+              </>
+            ) : (
+              <Empty description="Vertical not found" />
+            )}
+          </Card>
+        </>
+      )}
     </div>
   );
 };
