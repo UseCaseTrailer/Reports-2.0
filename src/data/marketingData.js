@@ -117,25 +117,28 @@ export const CAMPAIGNS = [
 /** Monthly trend data for charts */
 export const CAMP_MONTHLY = {
   M: {
-    labels: ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
-    mql: [68, 72, 87, 104, 118, 131],
-    pipeline: [420000, 465000, 512000, 578000, 641000, 702000],
-    spend: [32000, 38000, 41000, 44000, 47000, 51000],
-    target: [65, 75, 85, 95, 110, 125],
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    mql: [80, 110, 220, 185, 300, 660, 370, 440, 780, 160, 72, 70],
+    pipeline: [
+      210000, 280000, 380000, 310000, 480000, 850000, 550000, 720000, 2940000, 340000, 120000,
+      60000,
+    ],
+    spend: [28000, 32000, 38000, 34000, 42000, 78000, 52000, 68000, 89000, 44000, 18000, 12000],
+    target: [250, 250, 250, 250, 250, 250, 250, 250, 250, 250, 250, 250],
   },
   Q: {
     labels: ['Q1 FY26', 'Q2 FY26', 'Q3 FY26', 'Q4 FY26 (fcst)'],
-    mql: [198, 227, 353, 410],
-    pipeline: [1180000, 1342000, 1855000, 2100000],
-    spend: [88000, 129000, 143000, 160000],
-    target: [185, 210, 330, 390],
+    mql: [415, 1145, 1590, 297],
+    pipeline: [880000, 1620000, 4210000, 530000],
+    spend: [98000, 154000, 209000, 30000],
+    target: [750, 750, 750, 750],
   },
   H: {
     labels: ['H1 FY26', 'H2 FY26 (fcst)'],
-    mql: [425, 763],
-    pipeline: [2522000, 3955000],
-    spend: [217000, 303000],
-    target: [395, 720],
+    mql: [1555, 1892],
+    pipeline: [3500000, 3740000],
+    spend: [252000, 239000],
+    target: [1500, 1500],
   },
 };
 
@@ -191,4 +194,59 @@ export const FUNNEL_STAGES = [
   { stage: 'SQLs', value: 153, prev: 134 },
   { stage: 'Opportunities', value: 89, prev: 78 },
   { stage: 'Closed Won', value: 31, prev: 24 },
+];
+
+/** Portfolio Pulse KPI headline tiles */
+export const PULSE_KPIS = [
+  { label: 'Total Pipeline', value: '$7.24M', color: '#6366f1', sub: 'influenced' },
+  { label: 'ROI', value: '2.35x', color: '#52c41a', sub: 'return on spend' },
+  { label: 'Attainment', value: '81%', color: '#06b6d4', sub: 'vs annual target' },
+  { label: 'Campaigns', value: '6 / 11', color: '#f59e0b', sub: 'active / total' },
+  { label: 'vs Target', value: '63%', color: '#8b5cf6', sub: 'pipeline attainment' },
+  { label: 'Revenue', value: '$5.64M', color: '#10b981', sub: 'generated FY26' },
+];
+
+/** Pipeline by region */
+export const PIPELINE_BY_REGION = [
+  { region: 'NAMER', pipeline: 2740000 },
+  { region: 'NAMER + EMEA', pipeline: 2400000 },
+  { region: 'EMEA', pipeline: 2100000 },
+];
+
+/** Pipeline by campaign type */
+export const PIPELINE_BY_TYPE = [
+  { type: 'Event', pipeline: 2990000, color: '#6366f1' },
+  { type: 'ABM', pipeline: 2400000, color: '#8b5cf6' },
+  { type: 'Webinar', pipeline: 718000, color: '#06b6d4' },
+  { type: 'Omnichannel', pipeline: 322000, color: '#10b981' },
+  { type: 'Paid Social', pipeline: 316000, color: '#f59e0b' },
+  { type: 'Paid Search', pipeline: 278000, color: '#f97316' },
+  { type: 'Email', pipeline: 210000, color: '#ef4444' },
+];
+
+/** Campaign status summary */
+export const CAMPAIGN_STATUS = [
+  { status: 'Complete', count: 9, color: '#52c41a' },
+  { status: 'In Review', count: 1, color: '#faad14' },
+  { status: 'Planning', count: 1, color: '#94a3b8' },
+];
+
+/** Budget allocation by category */
+export const BUDGET_ALLOCATION = [
+  { category: 'Events', budget: 218000, color: '#6366f1' },
+  { category: 'Paid Media', budget: 140500, color: '#8b5cf6' },
+  { category: 'Webinar', budget: 72000, color: '#06b6d4' },
+  { category: 'Brand', budget: 23500, color: '#10b981' },
+  { category: 'Email / Nurture', budget: 12000, color: '#f59e0b' },
+  { category: 'Product', budget: 5000, color: '#f97316' },
+];
+
+/** Pipeline influenced by marketing category */
+export const PIPELINE_BY_CATEGORY = [
+  { category: 'Paid Media', pipeline: 2990000 },
+  { category: 'Events', pipeline: 2940000 },
+  { category: 'Webinar', pipeline: 1080000 },
+  { category: 'Brand', pipeline: 420000 },
+  { category: 'Email / Nurture', pipeline: 210000 },
+  { category: 'Product', pipeline: 98000 },
 ];
