@@ -39,6 +39,14 @@
       "account": "الحساب"
     },
     "items": {
+      "departments": "الأقسام",
+      "deptHealthcare": "الرعاية الصحية وعلوم الحياة",
+      "deptTechnology": "التكنولوجيا والبرمجيات",
+      "deptManufacturing": "التصنيع والصناعة",
+      "deptFinancial": "الخدمات المالية",
+      "deptRealEstate": "العقارات والطاقة",
+      "deptFood": "الغذاء والضيافة والتجزئة",
+      "deptProfessional": "الخدمات المهنية",
       "dashboard": "لوحة التحكم",
       "analytics": "التحليلات",
       "charts": "الرسوم البيانية",

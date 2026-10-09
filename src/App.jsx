@@ -58,7 +58,8 @@ const App = () => (
           <Route path="portfolios" element={<Portfolios />} />
           <Route path="projects" element={<Projects />} />
           <Route path="marketing" element={<Marketing />} />
-          <Route path="departments" element={<Departments />} />
+          <Route path="departments" element={<Navigate to="departments/healthcare" replace />} />
+          <Route path="departments/:vertical" element={<Departments />} />
 
           {/* System pages */}
           <Route path="notifications" element={<Notifications />} />

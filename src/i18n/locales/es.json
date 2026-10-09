@@ -39,6 +39,14 @@
       "account": "Cuenta"
     },
     "items": {
+      "departments": "Departamentos",
+      "deptHealthcare": "Salud y Ciencias de la Vida",
+      "deptTechnology": "Tecnología y SaaS",
+      "deptManufacturing": "Manufactura e Industrial",
+      "deptFinancial": "Servicios Financieros",
+      "deptRealEstate": "Bienes Raíces y Energía",
+      "deptFood": "Alimentos, Hospitalidad y Retail",
+      "deptProfessional": "Servicios Profesionales",
       "dashboard": "Panel",
       "analytics": "Analítica",
       "charts": "Gráficos",
